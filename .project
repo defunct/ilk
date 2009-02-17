@@ -1,0 +1,13 @@
+<projectDescription>
+  <name>ilk-stream</name>
+  <comment>Type-safe streams using super type tokens.</comment>
+  <projects/>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
