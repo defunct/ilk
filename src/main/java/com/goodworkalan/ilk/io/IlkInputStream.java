@@ -7,14 +7,16 @@ import java.io.ObjectInputStream;
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.UncheckedCast;
 
+// TODO Document.
 public class IlkInputStream extends ObjectInputStream
 {
+    // TODO Document.
     public IlkInputStream(InputStream in) throws IOException
     {
         super(in);
     }
     
-    
+    // TODO Document.
     public <T> T readObject(Ilk<T> ilk) throws IOException, ClassNotFoundException
     {
         Object object = readObject();
