@@ -4,9 +4,13 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertFalse;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.testng.annotations.Test;
 
@@ -27,5 +31,14 @@ public class IlkTest
         Ilk.Key mapKey = new Ilk<Map<String, List<Integer>>>() { }.key;
         assertTrue(mapKey.get(1).equals(new Ilk<List<Integer>>() { }.key));
         assertFalse(mapKey.get(1).equals(new Ilk<List<String>>() { }.key));
+    }
+    
+    @Test
+    public void assignment()
+    {
+        Ilk.Key to = new Ilk<Map<Number, List<String>>>() { }.key;
+        Ilk.Key from = new Ilk<TreeMap<Integer, ArrayList<String>>>() { }.key;
+        assertTrue(to.isAssignableFrom(from));
+        assertFalse(to.isAssignableFrom(new Ilk<TreeMap<Integer, HashSet<String>>>() { }.key));
     }
 }
