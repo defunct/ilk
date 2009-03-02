@@ -3,6 +3,7 @@ package com.goodworkalan.ilk;
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 
 /**
  * An implementation of type tokens or Gafter’s Gadget that generates a navigable
@@ -80,6 +81,8 @@ public class Ilk<T>
         /** The class of the object. */
         final Class<?> keyClass;
         
+        final String parameterName;
+        
         /** The cached hash code for this key. */
         final int hashCode;
         
@@ -99,8 +102,19 @@ public class Ilk<T>
          */
         public Key(Type type)
         {
-            this.keyClass = getKeyClass(type);
-            this.parameters = getParameterKeys(type);
+            this(getKeyClass(type, null), null, getParameterKeys(type, null));
+        }
+        
+        public Key(Type type, Key key)
+        {
+            this(getKeyClass(type, key), null, getParameterKeys(type, key));
+        }
+        
+        Key(Class<?> keyClass, String parameterName, Key[] parameters)
+        {
+            this.keyClass = keyClass;
+            this.parameterName = parameterName;
+            this.parameters = parameters;
             this.hashCode = getHashCode(keyClass.hashCode(), parameters);
         }
 
@@ -131,7 +145,7 @@ public class Ilk<T>
          *            The type.
          * @return The class of the super type token.
          */
-        private static Class<?> getKeyClass(Type type)
+        private static Class<?> getKeyClass(Type type, Key key)
         {
             if (type instanceof ParameterizedType)
             {
@@ -141,9 +155,16 @@ public class Ilk<T>
             {
                 return (Class<?>) type;
             }
+            else if (type instanceof WildcardType)
+            {
+                if (key != null)
+                {
+                    return key.getKeyClass();
+                }
+            }
             throw new IllegalArgumentException();
         }
-
+        
         /**
          * Create an array of keys for the type parameters of the given type.
          * 
@@ -151,7 +172,7 @@ public class Ilk<T>
          *            The type.
          * @return An array of keys for the type parameters of the given type.
          */
-        private Key[] getParameterKeys(Type type)
+        private static Key[] getParameterKeys(Type type, Key key)
         {
             if (type instanceof ParameterizedType)
             {
@@ -159,13 +180,20 @@ public class Ilk<T>
                 Key[] parameters = new Key[pt.getActualTypeArguments().length];
                 for (int i = 0; i < parameters.length; i++)
                 {
-                    parameters[i] = new Key(pt.getActualTypeArguments()[i]);
+                    Type actualType = pt.getActualTypeArguments()[i];
+                    String parameterName = pt.getRawType().getClass().getTypeParameters()[i].getName();
+                    Key parameter = key == null ? null : key.get(parameterName);
+                    parameters[i] = new Key(getKeyClass(actualType, parameter), parameterName, getParameterKeys(actualType, parameter));
                 }
                 return parameters;
             }
             else if (type instanceof Class)
             {
                 return new Key[0];
+            }
+            else if (type instanceof WildcardType)
+            {
+                return key.copyParameters();
             }
             throw new IllegalArgumentException();
         }
@@ -178,6 +206,26 @@ public class Ilk<T>
         public Class<?> getKeyClass()
         {
             return keyClass;
+        }
+        
+        public String getParameterName()
+        {
+            return parameterName;
+        }
+        
+        Key[] copyParameters()
+        {
+            Key[] copy = new Key[parameters.length];
+            for (int i = 0; i < copy.length; i++)
+            {
+                copy[i] = parameters[i].copy();
+            }
+            return copy;
+        }
+
+        public Key copy()
+        {
+            return new Key(keyClass, parameterName, copyParameters());
         }
 
         /**
@@ -192,6 +240,18 @@ public class Ilk<T>
         public Key get(int index)
         {
             return parameters[index];
+        }
+        
+        public Key get(String index)
+        {
+            for (Key key : parameters)
+            {
+                if (index.equals(key.getParameterName()))
+                {
+                    return key;
+                }
+            }
+            return null;
         }
 
         /**
@@ -254,6 +314,25 @@ public class Ilk<T>
         public int hashCode()
         {
             return hashCode;
+        }
+        
+        @Override
+        public String toString()
+        {
+            StringBuilder newString = new StringBuilder();
+            newString.append(keyClass.getName());
+            if (parameters.length != 0)
+            {
+                newString.append("<");
+                String separator = "";
+                for (Key key : parameters)
+                {
+                    newString.append(separator).append(key);
+                    separator = ", ";
+                }
+                newString.append(">");
+            }
+            return newString.toString();
         }
     }
 }
