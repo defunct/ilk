@@ -28,8 +28,8 @@ public class IlkTest
     public void canContain()
     {
         Ilk.Key mapKey = new Ilk<Map<String, List<Integer>>>() { }.key;
-        assertTrue(mapKey.get(1).equals(new Ilk<List<Integer>>() { }.key));
-        assertFalse(mapKey.get(1).equals(new Ilk<List<String>>() { }.key));
+        assertTrue(mapKey.get(1).getKey().equals(new Ilk<List<Integer>>() { }.key));
+        assertFalse(mapKey.get(1).getKey().equals(new Ilk<List<String>>() { }.key));
     }
     
     @Test

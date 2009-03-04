@@ -3,7 +3,12 @@ ILK
 An implementation of super type tokens (Gafter's Gadget). 
 
     Issues and Tasks: http://blogometer.com/trac/incubator
+
     Source: http://github.com/bigeasy/ilk/tree/master
+
+    API Javadoc: http://curlybraces.org/documentation/ilk/api/public/
+    All Javadoc: http://curlybraces.org/documentation/ilk/api/private/
+
     Contact: alan@blogometer.com
 
 PURPOSE
