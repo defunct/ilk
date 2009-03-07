@@ -13,20 +13,17 @@ An implementation of super type tokens (Gafter's Gadget).
 
 PURPOSE
 
-Ilk is my implementation of super type tokens, for inclusion in my
-projects, so that I don't have to borrow an implementation from Guice.
+Ilk is my implementation of super type tokens, for inclusion in my projects, so
+that I don't have to borrow an implementation from Guice.
 
 ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< -----
-
 Ilk.Key mapKey = new Ilk<Map<String, List<String>>() {};
 
-assertTrue(mapKey.get(0).equals(new Ilk<List<String>>(){}.key));
-assertFalse(mapKey.get(0).equals(new Ilk<List<Integer>>(){}.key));
-
+assertTrue(mapKey.get(1).getKey().equals(new Ilk<List<String>>(){}.key));
+assertFalse(mapKey.get(1).getKey().equals(new Ilk<List<Integer>>(){}.key));
 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 -----
 
 ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< -----
-
 IlkOutputStream out = new IlkOutputStream(new FileOutputStream("ilky.data"));
 out.writeObject(new Ilk<List<String>>(){}, new List<String>());
 out.close();
@@ -34,23 +31,20 @@ out.close();
 IlkInputStream in = new IlkInputStream(new FileInputSTream("ilky.data"));
 List<String> strings = in.readObject(new Ilk<List<String>>(){});
 in.close();
-
 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 -----
 
-At this point, it is hard to imagine how super type tokens could be used
-to create meaninful containers. Ordered containers don't make sense,
-because it is hard to imagine how to order disparate types in relation
-to each other.
+At this point, it is hard to imagine how super type tokens could be used to
+create meaninful containers. Ordered containers don't make sense, because it is
+hard to imagine how to order disparate types in relation to each other.
 
-A container that groups items by type can actually be useful however.
-One could imagine a hash that keyed by Ilk returning lists of objects of
-that Ilk. A database is pretty much that.
+A container that groups items by type can actually be useful however.  One could
+imagine a hash that keyed by Ilk returning lists of objects of that Ilk. A
+database is pretty much that.
 
-A particularly useful container is a stash. A map keyed by a combination
-of tpye and any keyed object. (Duh!) Make Stash generic!
+A particularly useful container is a stash. A map keyed by a combination of type
+and any keyed object. (Duh!) Make Stash generic!
 
 ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< ----- 8< -----
-
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.stash.Stash;
 
@@ -68,15 +62,8 @@ public class Stashed
         return stash.get(new Ilk<List<String>>() { }, STRING_LIST);
     }
 }
-
 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 ----- >8 -----
-
-Litany is a simple class that does reads Microsoft CSV formatted
-converting them into an iterator of lists of strings. It also has a
-static method to create a line from a list of strings.
 
 MOTIVATION
 
-Litany is the smallest useful project that I've created. As such, I use
-it as a model for project organization. Because the code base is so
-small, I can focus on the most complete user support and documentation.
+Creating a super type token to pull into projects encourages type-safe thinking.
