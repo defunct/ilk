@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
 
 /**
  * An implementation of type tokens or Gafter's Gadget that generates a
@@ -15,6 +18,10 @@ import java.lang.reflect.WildcardType;
  */
 public class Ilk<T>
 {
+    /** An empty queue. */
+    private final static Queue<Key> EMPTY_QUEUE = new LinkedList<Key>();
+    
+    /** The super type token key. */
     public final Key key;
 
     /**
@@ -24,7 +31,7 @@ public class Ilk<T>
      * This method is meant to be called from anonymous subclasses of
      * <code>Ilk</code>.
      */
-    protected Ilk()
+    protected Ilk(Key... keys)
     {
         // Give me class information.  
         Class<?> klass = getClass();  
@@ -64,7 +71,13 @@ public class Ilk<T>
         ParameterizedType pt = (ParameterizedType) superClass;  
        
         // We have one type argument in TypeRefence<T>: T.  
-        key = new Ilk.Key(pt.getActualTypeArguments()[0]);  
+        key = new Ilk.Key(pt.getActualTypeArguments()[0], keys);  
+    }
+    
+    // TODO Document.
+    public Pair pair(T object)
+    {
+        return new Pair(key, object);
     }
 
     /**
@@ -202,10 +215,18 @@ public class Ilk<T>
          * 
          * @param type
          *            The type for which to generate a key.
+         * @param keys
+         *            Key queue.
          */
-        public Key(Type type)
+        public Key(Type type, Key... keys)
         {
-            this(getKeyClass(type, null), getParameterKeys(type, null));
+            
+            this(getKeyClass(type, null, EMPTY_QUEUE), getParameterKeys(type, null, toQueue(keys)));
+        }
+
+        private static Queue<Key> toQueue(Key... keys)
+        {
+            return new LinkedList<Key>(Arrays.asList(keys));
         }
 
         /**
@@ -221,7 +242,7 @@ public class Ilk<T>
          */
         public Key(Type type, Key key)
         {
-            this(getKeyClass(type, key), getParameterKeys(type, key));
+            this(getKeyClass(type, null, EMPTY_QUEUE), getParameterKeys(type, key, toQueue()));
         }
 
         /**
@@ -271,7 +292,7 @@ public class Ilk<T>
          *            The type parameter definition in the parent class or null.
          * @return The class of the super type token.
          */
-        private static Class<?> getKeyClass(Type type, Key key)
+        private static Class<?> getKeyClass(Type type, Key subKey, Queue<Key> queue)
         {
             if (type instanceof ParameterizedType)
             {
@@ -281,9 +302,16 @@ public class Ilk<T>
             {
                 return (Class<?>) type;
             }
-            else if ((type instanceof WildcardType) && key != null)
+            else if (type instanceof WildcardType) 
             {
-                return key.getKeyClass();
+                if (subKey != null)
+                {
+                    return subKey.getKeyClass();
+                }
+                else if (!queue.isEmpty())
+                {
+                    return queue.poll().getKeyClass();
+                }
             }
             throw new IllegalArgumentException();
         }
@@ -295,7 +323,7 @@ public class Ilk<T>
          *            The type.
          * @return An array of keys for the type parameters of the given type.
          */
-        private static Parameter[] getParameterKeys(Type type, Key key)
+        private static Parameter[] getParameterKeys(Type type, Key key, Queue<Key> queue)
         {
             if (type instanceof ParameterizedType)
             {
@@ -306,7 +334,8 @@ public class Ilk<T>
                     Type actualType = pt.getActualTypeArguments()[i];
                     String parameterName = ((Class<?>) pt.getRawType()).getTypeParameters()[i].getName();
                     Key subKey = key == null ? null : key.get(parameterName).getKey();
-                    parameters[i] = new Parameter(parameterName, new Key(getKeyClass(actualType, subKey), getParameterKeys(actualType, subKey)));
+                    Class<?> keyClass = getKeyClass(actualType, subKey, queue);
+                    parameters[i] = new Parameter(parameterName, new Key(keyClass, getParameterKeys(actualType, null, queue)));
                 }
                 return parameters;
             }
@@ -316,7 +345,7 @@ public class Ilk<T>
             }
             else if (type instanceof WildcardType)
             {
-                return getParameterKeys(key.getKeyClass(), key);
+                return getParameterKeys(key.getKeyClass(), key, queue);
             }
             throw new IllegalArgumentException();
         }
@@ -338,7 +367,7 @@ public class Ilk<T>
          */
         public Key copy()
         {
-            return new Key(keyClass, getParameterKeys(keyClass, this));
+            return new Key(keyClass, getParameterKeys(keyClass, this, new LinkedList<Key>()));
         }
 
         /**
@@ -459,6 +488,33 @@ public class Ilk<T>
                 newString.append(">");
             }
             return newString.toString();
+        }
+    }
+    
+    // TODO Document.
+    public final static class Pair
+    {
+        // TODO Document.
+        private final Key key;
+
+        // TODO Document.
+        private final Object object;
+        
+        // TODO Document.
+        Pair(Key key, Object object)
+        {
+            this.key = key;
+            this.object = object;
+        }
+        
+        // TODO Document.
+        public <C> C cast(Ilk<C> ilk)
+        {
+            if (ilk.key.equals(key))
+            {
+                return new UncheckedCast<C>().cast(object);
+            }
+            throw new ClassCastException();
         }
     }
 }

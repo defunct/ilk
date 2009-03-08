@@ -40,4 +40,20 @@ public class IlkTest
         assertTrue(to.isAssignableFrom(from));
         assertFalse(to.isAssignableFrom(new Ilk<TreeMap<Integer, HashSet<String>>>() { }.key));
     }
+    
+    @Test void pair()
+    {
+        Ilk.Pair pair = new Ilk<String>() { }.pair("Hello, World!");
+        String hello = pair.cast(new Ilk<String>() { });
+        assertEquals(hello, "Hello, World!");
+        replace(new Ilk<String>() { });
+    }
+    
+    private <T> void replace(Ilk<T> ilk) 
+    {
+        Ilk<Map<T, Integer>> mapKey = new Ilk<Map<T, Integer>>(ilk.key) { };
+        Ilk.Pair pair = mapKey.pair(new HashMap<T, Integer>());
+        Map<String, Integer> map = pair.cast(new Ilk<Map<String, Integer>>() { });
+        assertTrue(map.isEmpty());
+    }
 }
