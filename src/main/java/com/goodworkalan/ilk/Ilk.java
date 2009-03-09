@@ -224,6 +224,7 @@ public class Ilk<T>
             this(getKeyClass(type, null, EMPTY_QUEUE), getParameterKeys(type, null, toQueue(keys)));
         }
 
+        // TODO Document.
         private static Queue<Key> toQueue(Key... keys)
         {
             return new LinkedList<Key>(Arrays.asList(keys));
@@ -240,7 +241,7 @@ public class Ilk<T>
          *            An {@link Ilk} generated key used to lookup actual types
          *            for wildcard types.
          */
-        public Key(Type type, Key key)
+        public Key(Key key, Type type)
         {
             this(getKeyClass(type, null, EMPTY_QUEUE), getParameterKeys(type, key, toQueue()));
         }
