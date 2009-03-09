@@ -88,8 +88,11 @@ public class Ilk<T>
      * 
      * @author Alan Gutierrez
      */
-    public final static class Parameter
+    public final static class Parameter implements Serializable
     {
+        /** The serial version id. */
+        private static final long serialVersionUID = 1L;
+
         /** The parameter name. */
         private final String name;
         
@@ -493,8 +496,11 @@ public class Ilk<T>
     }
     
     // TODO Document.
-    public final static class Pair
+    public final static class Pair implements Serializable
     {
+        /** The serial version id. */
+        private static final long serialVersionUID = 1L;
+
         // TODO Document.
         private final Key key;
 
