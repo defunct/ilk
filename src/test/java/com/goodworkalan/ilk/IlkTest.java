@@ -4,12 +4,16 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.testng.annotations.Test;
 
@@ -41,11 +45,17 @@ public class IlkTest
         assertFalse(to.isAssignableFrom(new Ilk<TreeMap<Integer, HashSet<String>>>() { }.key));
     }
     
-    @Test void pair()
+    @Test
+    public void pair()
     {
         Ilk.Pair pair = new Ilk<String>() { }.pair("Hello, World!");
         String hello = pair.cast(new Ilk<String>() { });
         assertEquals(hello, "Hello, World!");
+    }
+
+    @Test
+    public void replacement()
+    {
         replace(new Ilk<String>() { });
     }
     
@@ -55,5 +65,43 @@ public class IlkTest
         Ilk.Pair pair = mapKey.pair(new HashMap<T, Integer>());
         Map<String, Integer> map = pair.cast(new Ilk<Map<String, Integer>>() { });
         assertTrue(map.isEmpty());
+    }
+    
+    @Test
+    public void wildcard()
+    {
+        Ilk.Pair pair = new Ilk<List<Long>>() { }.pair(Collections.singletonList(1L));
+        assertEquals(pair.cast(new Ilk<List<? super Number>>() { }).size(), 1);
+    }
+    
+    @Test
+    public void lookups() throws Exception
+    {
+        assertTrue(lookup(new Ilk<One<String>>() { }, new Ilk<Two<String>>() { }, new One<String>()));
+        assertTrue(lookup(new Ilk<Collection<String>>() {}, new Ilk<TreeSet<String>>() {}, new ArrayList<String>()));
+    }
+    
+    private <F, T> boolean lookup(Ilk<F> from, Ilk<T> to, F object) throws Exception
+    {
+        for (Constructor<T> constructor : to.getConstructors())
+        {
+            if (constructor.getGenericParameterTypes().length == 1)
+            {
+                Ilk.Key key;
+                try
+                {
+                    key = new Ilk.Key(to.key, constructor.getGenericParameterTypes()[0]);
+                }
+                catch (IllegalArgumentException e)
+                {
+                    continue;
+                }
+                if (key.isAssignableFrom(from.key))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
