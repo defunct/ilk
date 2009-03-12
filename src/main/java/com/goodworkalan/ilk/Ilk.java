@@ -520,6 +520,11 @@ public class Ilk<T>
             this.object = object;
         }
         
+        public Object getObject()
+        {
+            return object;
+        }
+
         // TODO Document.
         public <C> C cast(Ilk<C> ilk)
         {

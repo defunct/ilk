@@ -12,7 +12,7 @@ package com.goodworkalan.ilk;
  * @param <T>
  *            The type to cast to.
  */
-public class UncheckedCast<T>
+class UncheckedCast<T>
 {
     /**
      * Cast the given object to the parameterized type of this unchecked cast
