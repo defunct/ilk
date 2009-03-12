@@ -17,7 +17,6 @@ public class IlkOutputStream extends ObjectOutputStream
     // TODO Document.
     public <T> void writeObject(Ilk<T> ilk, T object) throws IOException
     {
-        writeObject(ilk.key);
-        writeObject(object);
+        writeObject(ilk.pair(object));
     }
 }
