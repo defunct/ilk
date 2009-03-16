@@ -32,35 +32,13 @@ List&lt;String&gt; strings = in.readObject(new Ilk&lt;List&lt;String&gt;&gt;(){}
 in.close();
 </pre>
 
-At this point, it is hard to imagine how super type tokens could be used to
-create meaninful containers. Ordered containers don't make sense, because it is
-hard to imagine how to order disparate types in relation to each other.
-
-A container that groups items by type can actually be useful however.  One could
-imagine a hash that keyed by Ilk returning lists of objects of that Ilk. A
-database is pretty much that.
-
-A particularly useful container is a stash. A map keyed by a combination of type
-and any keyed object. (Duh!) Make Stash generic!
+With Ilk, you do not have to use @SuppressWarnings("unchecked") in your code.
+You can safely cast to a generic type.
 
 <pre>
-import com.goodworkalan.ilk.Ilk;
-import com.goodworkalan.stash.Stash;
+Ilk.Pair pair = new Ilk&lt;List&lt;String&gt;&gt;() { }.pair(new ArrayList&lt;String&gt;());
 
-public class Stashed
-{
-    private final static Stash.Key STRING_LIST = new Stash.Key();
-
-    public static void setStringList(Stash stash, List&lt;String&gt; strings)
-    {
-        stash.put(new Ilk&lt;List&lt;String&gt;&gt;(){}, STRING_LIST, new List&lt;String&gt;());
-    }
-
-    public List&lt;String&gt; getStringList(Stash stash)
-    {
-        return stash.get(new Ilk&lt;List&lt;String&gt;&gt;() { }, STRING_LIST);
-    }
-}
+List&lt;String&gt; list = pair.cast(new Ilk&lt;List&lt;String&gt;&gt;() { });
 </pre>
 
 Motivation
