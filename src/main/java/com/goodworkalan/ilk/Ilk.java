@@ -26,7 +26,12 @@ public class Ilk<T>
     /** The super type token key. */
     public final Key key;
 
-    // TODO Document.
+    /**
+     * Create a super type token for the given class.
+     * 
+     * @param keyClass
+     *            The class.
+     */
     public Ilk(Class<T> keyClass)
     {
         this.key = new Key(keyClass);
