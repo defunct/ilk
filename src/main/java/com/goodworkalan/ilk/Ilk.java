@@ -88,9 +88,9 @@ public class Ilk<T>
     }
     
     // TODO Document.
-    public Pair pair(T object)
+    public Box box(T object)
     {
-        return new Pair(key, object);
+        return new Box(key, object);
     }
     
     /**
@@ -671,7 +671,7 @@ public class Ilk<T>
     }
     
     // TODO Document.
-    public final static class Pair implements Serializable
+    public final static class Box implements Serializable
     {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
@@ -690,7 +690,7 @@ public class Ilk<T>
          * @param object
          *            The object.
          */
-        Pair(Key key, Object object)
+        Box(Key key, Object object)
         {
             this.key = key;
             this.object = object;

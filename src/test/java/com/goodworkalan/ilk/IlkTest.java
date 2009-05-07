@@ -46,10 +46,10 @@ public class IlkTest
     }
     
     @Test
-    public void pair()
+    public void box()
     {
-        Ilk.Pair pair = new Ilk<String>() { }.pair("Hello, World!");
-        String hello = pair.cast(new Ilk<String>() { });
+        Ilk.Box box = new Ilk<String>() { }.box("Hello, World!");
+        String hello = box.cast(new Ilk<String>() { });
         assertEquals(hello, "Hello, World!");
     }
 
@@ -62,7 +62,7 @@ public class IlkTest
     private <T> void replace(Ilk<T> ilk) 
     {
         Ilk<Map<T, Integer>> mapKey = new Ilk<Map<T, Integer>>(ilk.key) { };
-        Ilk.Pair pair = mapKey.pair(new HashMap<T, Integer>());
+        Ilk.Box pair = mapKey.box(new HashMap<T, Integer>());
         Map<String, Integer> map = pair.cast(new Ilk<Map<String, Integer>>() { });
         assertTrue(map.isEmpty());
     }
@@ -70,7 +70,7 @@ public class IlkTest
     @Test
     public void wildcard()
     {
-        Ilk.Pair pair = new Ilk<List<Long>>() { }.pair(Collections.singletonList(1L));
+        Ilk.Box pair = new Ilk<List<Long>>() { }.box(Collections.singletonList(1L));
         assertEquals(pair.cast(new Ilk<List<? super Number>>() { }).size(), 1);
     }
     
