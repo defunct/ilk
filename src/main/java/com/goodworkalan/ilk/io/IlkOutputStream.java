@@ -43,6 +43,6 @@ public class IlkOutputStream extends ObjectOutputStream
      */
     public <T> void writeObject(Ilk<T> ilk, T object) throws IOException
     {
-        writeObject(ilk.pair(object));
+        writeObject(ilk.box(object));
     }
 }

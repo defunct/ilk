@@ -49,10 +49,10 @@ public class IlkInputStream extends ObjectInputStream
     public <T> T readObject(Ilk<T> ilk) throws IOException, ClassNotFoundException
     {
         Object object = readObject();
-        if (!(object instanceof Ilk.Pair))
+        if (!(object instanceof Ilk.Box))
         {
             throw new IOException("Object Ilk not recorded.");
         }
-        return ((Ilk.Pair) object).cast(ilk);
+        return ((Ilk.Box) object).cast(ilk);
     }
 }
