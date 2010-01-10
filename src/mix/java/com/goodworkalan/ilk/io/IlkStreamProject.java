@@ -18,7 +18,7 @@ public class IlkStreamProject extends ProjectModule {
                     .end()
                 .test()
                     .depends()
-                        .artifact(new Artifact("org.testng/testng/5.10/jdk"))
+                        .artifact(new Artifact("org.testng/testng/5.10/jdk15"))
                         .end()
                     .end()
                 .end()
