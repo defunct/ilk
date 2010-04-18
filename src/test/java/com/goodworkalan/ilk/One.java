@@ -1,5 +1,4 @@
 package com.goodworkalan.ilk;
 
-public class One<Uno>
-{
+public class One<Uno> {
 }

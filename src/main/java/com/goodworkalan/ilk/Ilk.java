@@ -21,8 +21,7 @@ import java.util.List;
  *
  * @param <T> The type to tokenize.
  */
-public class Ilk<T>
-{
+public class Ilk<T> {
     /** The super type token key. */
     public final Key key;
 
@@ -32,8 +31,7 @@ public class Ilk<T>
      * @param keyClass
      *            The class.
      */
-    public Ilk(Class<T> keyClass)
-    {
+    public Ilk(Class<T> keyClass) {
         this.key = new Key(keyClass);
     }
 
@@ -44,19 +42,17 @@ public class Ilk<T>
      * This method is meant to be called from anonymous subclasses of
      * <code>Ilk</code>.
      */
-    protected Ilk(Key... keys)
-    {
-        // Give me class information.  
-        Class<?> klass = getClass();  
-       
+    protected Ilk(Key... keys) {
+        // Give me class information.
+        Class<?> klass = getClass();
+
         // See that I have created an anonymous subclass of TypeReference in the  
         // main method. Hence, to get the TypeReference itself, I need superclass.  
         // Furthermore, to get Type information, you should call  
         // getGenericSuperclass() instead of getSuperclass().  
         Type superClass = klass.getGenericSuperclass();  
        
-        if (superClass instanceof Class<?>)
-        {  
+        if (superClass instanceof Class<?>) {
             // Type has four subinterface:  
             // (1) GenericArrayType: component type is either a  
             // parameterized type or a type variable. Parameterized type is a class  
@@ -88,21 +84,18 @@ public class Ilk<T>
     }
     
     // TODO Document.
-    public Box box(T object)
-    {
+    public Box box(T object) {
         return new Box(key, object);
     }
-    
+
     /**
      * Get a list of constructors for the key class.
      * 
      * @return A list of constructors.
      */
-    public List<Constructor<T>> getConstructors()
-    {
+    public List<Constructor<T>> getConstructors() {
         List<Constructor<T>> constructors = new ArrayList<Constructor<T>>();
-        for (Constructor<?> constructor : key.getKeyClass().getConstructors())
-        {
+        for (Constructor<?> constructor : key.getKeyClass().getConstructors()) {
             constructors.add(new UncheckedCast<Constructor<T>>().cast(constructor));
         }
         return constructors;
@@ -116,8 +109,7 @@ public class Ilk<T>
      * 
      * @author Alan Gutierrez
      */
-    public final static class Parameter implements Serializable
-    {
+    public final static class Parameter implements Serializable {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
@@ -135,8 +127,7 @@ public class Ilk<T>
          * @param key
          *            The super type token.
          */
-        Parameter(String name, Key key)
-        {
+        Parameter(String name, Key key) {
             this.name = name;
             this.key = key;
         }
@@ -147,8 +138,7 @@ public class Ilk<T>
          * 
          * @return The parameter name of the key in the parent class.
          */
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
@@ -157,26 +147,23 @@ public class Ilk<T>
          * 
          * @return The super type token.
          */
-        public Key getKey()
-        {
+        public Key getKey() {
             return key;
         }
-        
+
         /**
-         * Create a deep copy of this parameter. This will create a copy
-         * of this parameter and the parameter type declarations of the
-         * key referenced by this parameter. 
+         * Create a deep copy of this parameter. This will create a copy of this
+         * parameter and the parameter type declarations of the key referenced
+         * by this parameter.
          * 
          * @return A deep copy of this parameter.
          */
-        public Parameter copy(String name)
-        {
+        public Parameter copy(String name) {
             return new Parameter(name, key.copy());
         }
-        
+
         // TODO Document.
-        public Parameter copy()
-        {
+        public Parameter copy() {
             return copy(name);
         }
 
@@ -191,14 +178,11 @@ public class Ilk<T>
          *         equal to that of this parameter.
          */
         @Override
-        public boolean equals(Object object)
-        {
-            if (object == this)
-            {
+        public boolean equals(Object object) {
+            if (object == this) {
                 return true;
             }
-            if (object instanceof Parameter)
-            {
+            if (object instanceof Parameter) {
                 Parameter parameter = (Parameter) object;
                 return name.equals(parameter.name) && key.equals(parameter.key);
             }
@@ -212,8 +196,7 @@ public class Ilk<T>
          * @return A hash code.
          */
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int hashCode = 1;
             hashCode = hashCode * 37 + name.hashCode();
             hashCode = hashCode * 37 + key.hashCode();
@@ -222,15 +205,13 @@ public class Ilk<T>
         
         // TODO Document.
         @Override
-        public String toString()
-        {
+        public String toString() {
             return key.toString();
         }
     }
 
     // TODO Document.
-    public enum Wildcard
-    {
+    public enum Wildcard {
         NONE, UPPER, LOWER
     }
 
@@ -241,8 +222,7 @@ public class Ilk<T>
      * 
      * @author Alan Gutierrez
      */
-    public final static class Key implements Serializable
-    {
+    public final static class Key implements Serializable {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
@@ -271,20 +251,17 @@ public class Ilk<T>
          * @param keys
          *            Key queue.
          */
-        public Key(Type type, Key... keys)
-        {
+        public Key(Type type, Key... keys) {
             this(getKeyClass(type), getParameterKeys(type, null, toQueue(keys)), Wildcard.NONE);
         }
 
         
-        public Wildcard getWildcard()
-        {
+        public Wildcard getWildcard() {
             return wildcard;
         }
 
         // TODO Document.
-        private static Queue<Key> toQueue(Key... keys)
-        {
+        private static Queue<Key> toQueue(Key... keys) {
             return new LinkedList<Key>(Arrays.asList(keys));
         }
 
@@ -299,8 +276,7 @@ public class Ilk<T>
          *            An {@link Ilk} generated key used to lookup actual types
          *            for wildcard types.
          */
-        public Key(Key key, Type type)
-        {
+        public Key(Key key, Type type) {
             this(getKeyClass(type), getParameterKeys(type, key, toQueue()), Wildcard.NONE);
         }
 
@@ -315,8 +291,7 @@ public class Ilk<T>
          * @param parameters
          *            The parameter keys.
          */
-        private Key(Class<?> keyClass, Parameter[] parameters, Wildcard wildcard)
-        {
+        private Key(Class<?> keyClass, Parameter[] parameters, Wildcard wildcard) {
             this.keyClass = keyClass;
             this.parameters = parameters;
             this.hashCode = getHashCode(keyClass.hashCode(), wildcard.hashCode(), parameters);
@@ -334,13 +309,11 @@ public class Ilk<T>
          *            The type parameters of the type token.
          * @return A combined hash code.
          */
-        public int getHashCode(int keyClass, int wildcard, Parameter[] parameters)
-        {
+        public int getHashCode(int keyClass, int wildcard, Parameter[] parameters) {
             int hashCode = 1999;
             hashCode = hashCode * 37 + keyClass;
             hashCode = hashCode * 37 + wildcard;
-            for (Parameter parameter : parameters)
-            {
+            for (Parameter parameter : parameters) {
                 hashCode = hashCode * 37 + parameter.hashCode(); 
             }
             return hashCode;
@@ -355,14 +328,10 @@ public class Ilk<T>
          *            The type parameter definition in the parent class or null.
          * @return The class of the super type token.
          */
-        private static Class<?> getKeyClass(Type type)
-        {
-            if (type instanceof ParameterizedType)
-            {
+        private static Class<?> getKeyClass(Type type) {
+            if (type instanceof ParameterizedType) {
                 return (Class<?>) ((ParameterizedType) type).getRawType();
-            }
-            else if (type instanceof Class<?>)
-            {
+            } else if (type instanceof Class<?>) {
                 return (Class<?>) type;
             }
             throw new IllegalArgumentException();
@@ -375,110 +344,75 @@ public class Ilk<T>
          *            The type.
          * @return An array of keys for the type parameters of the given type.
          */
-        private static Parameter[] getParameterKeys(Type type, Key key, Queue<Key> queue)
-        {
-            if (type instanceof ParameterizedType)
-            {
+        private static Parameter[] getParameterKeys(Type type, Key key, Queue<Key> queue) {
+            if (type instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) type;
                 Parameter[] parameters = new Parameter[pt.getActualTypeArguments().length];
-                for (int i = 0; i < parameters.length; i++)
-                {
+                for (int i = 0; i < parameters.length; i++) {
                     Type actualType = pt.getActualTypeArguments()[i];
-                    if (((actualType instanceof WildcardType) || (actualType instanceof TypeVariable<?>)) && key != null)
-                    {
+                    if (((actualType instanceof WildcardType) || (actualType instanceof TypeVariable<?>)) && key != null) {
                         Class<?> rawType = (Class<?>) pt.getRawType();
                         Class<?> keyType = key.getKeyClass();
-                        if (rawType.isAssignableFrom(keyType))
-                        {
+                        if (rawType.isAssignableFrom(keyType)) {
                             Parameter parameter = null;
-                            for (Type meta : keyType.getGenericInterfaces())
-                            {
+                            for (Type meta : keyType.getGenericInterfaces()) {
                                 parameter = interfaces(i, key, rawType, meta);
-                                if (parameter != null)
-                                {
+                                if (parameter != null) {
                                     break;
                                 }
                             }
-                            if (parameter == null)
-                            {
+                            if (parameter == null) {
                                 parameter = superclasses(i, key, rawType, keyType.getGenericSuperclass());
                             }
-                            if (parameter == null)
-                            {
+                            if (parameter == null) {
                                 throw new IllegalArgumentException();
                             }
                             parameters[i] = parameter;
-                        }
-                        else
-                        {
+                        } else {
                             throw new IllegalArgumentException();
                         }
-                    }
-                    else
-                    {
+                    } else {
                         String parameterName = ((Class<?>) pt.getRawType()).getTypeParameters()[i].getName();
-                        if ((actualType instanceof TypeVariable<?>) && !queue.isEmpty()) 
-                        {
-                            if (!queue.isEmpty())
-                            {
+                        if ((actualType instanceof TypeVariable<?>) && !queue.isEmpty()) {
+                            if (!queue.isEmpty())                            {
                                 parameters[i] = new Parameter(parameterName, queue.poll().copy());
-                            }
-                            else
-                            {
+                            } else {
                                 throw new IllegalArgumentException();
                             }
-                        }
-                        else if (actualType instanceof WildcardType)
-                        {
+                        } else if (actualType instanceof WildcardType) {
                             // You're only able to declare one super or extends in
                             // a super type token.
                             WildcardType wt = (WildcardType) actualType;
-                            if (wt.getUpperBounds() != null && wt.getUpperBounds().length != 0)
-                            {
+                            if (wt.getUpperBounds() != null && wt.getUpperBounds().length != 0) {
                                 parameters[i] = new Parameter(parameterName, new Key((Class<?>) wt.getUpperBounds()[0], new Parameter[0], Wildcard.UPPER));
-                            }
-                            else if (wt.getLowerBounds() != null && wt.getLowerBounds().length != 0)
-                            {
+                            } else if (wt.getLowerBounds() != null && wt.getLowerBounds().length != 0) {
                                 parameters[i] = new Parameter(parameterName, new Key((Class<?>) wt.getLowerBounds()[0], new Parameter[0], Wildcard.LOWER));
-                            }
-                            else
-                            {
+                            } else {
                                 parameters[i] = new Parameter(parameterName, new Key(Object.class, new Parameter[0], Wildcard.UPPER));
                             }
-                        }
-                        else
-                        {
+                        } else {
                             parameters[i] = new Parameter(parameterName, new Key(getKeyClass(actualType), getParameterKeys(actualType, key == null ? null : key.get(i).getKey(), queue), Wildcard.NONE));
                         }
                     }
                 }
                 return parameters;
-            }
-            else if (type instanceof Class<?>)
-            {
+            } else if (type instanceof Class<?>) {
                 return new Parameter[0];
-            }
-            else if (type instanceof WildcardType)
-            {
+            } else if (type instanceof WildcardType) {
                 return getParameterKeys(key.getKeyClass(), key, queue);
             }
             throw new IllegalArgumentException();
         }
 
         // TODO Document.
-        private static Parameter superclasses(int i, Key lookup, Class<?> rawType, Type meta)
-        {
-            if (meta == null)
-            {
+        private static Parameter superclasses(int i, Key lookup, Class<?> rawType, Type meta) {
+            if (meta == null) {
                 return null;
             }
-            if (meta instanceof ParameterizedType)
-            {
-                if (((ParameterizedType) meta).getRawType().equals(rawType))
-                {
+            if (meta instanceof ParameterizedType) {
+                if (((ParameterizedType) meta).getRawType().equals(rawType)) {
                     Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable<?>)
-                    {
+                    if (actualType instanceof TypeVariable<?>) {
                         String name = ((TypeVariable<?>) actualType).getName();
                         String newName = rawType.getTypeParameters()[i].getName();
                         return lookup.get(name).copy(newName);
@@ -490,25 +424,19 @@ public class Ilk<T>
         }
 
         // TODO Document.
-        private static Parameter interfaces(int i, Key lookup, Class<?> rawType, Type meta)
-        {
-            if (meta instanceof ParameterizedType)
-            {
-                if (((ParameterizedType) meta).getRawType().equals(rawType))
-                {
+        private static Parameter interfaces(int i, Key lookup, Class<?> rawType, Type meta) {
+            if (meta instanceof ParameterizedType) {
+                if (((ParameterizedType) meta).getRawType().equals(rawType)) {
                     Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable<?>)
-                    {
+                    if (actualType instanceof TypeVariable<?>) {
                         String name = ((TypeVariable<?>) actualType).getName();
                         String newName = rawType.getTypeParameters()[i].getName();
                         return lookup.get(name).copy(newName);
                     }
                 }
-                for (Type subMeta : ((Class<?>) ((ParameterizedType) meta).getRawType()).getGenericInterfaces())
-                {
+                for (Type subMeta : ((Class<?>) ((ParameterizedType) meta).getRawType()).getGenericInterfaces()) {
                     Parameter parameter = interfaces(i, lookup, rawType, subMeta);
-                    if (parameter != null)
-                    {
+                    if (parameter != null) {
                         return parameter;
                     }
                 }
@@ -521,8 +449,7 @@ public class Ilk<T>
          * 
          * @return The class of the super type token.
          */
-        public Class<?> getKeyClass()
-        {
+        public Class<?> getKeyClass() {
             return keyClass;
         }
 
@@ -531,11 +458,9 @@ public class Ilk<T>
          * 
          * @return A copy of this super type token.
          */
-        public Key copy()
-        {
+        public Key copy() {
             Parameter copy[] = new Parameter[parameters.length];
-            for (int i = 0; i < copy.length; i++)
-            {
+            for (int i = 0; i < copy.length; i++) {
                 copy[i] = parameters[i].copy();
             }
             return new Key(keyClass, copy, wildcard);
@@ -550,8 +475,7 @@ public class Ilk<T>
          *            The index of the type parameter.
          * @return The key for the type parameter at the given index.
          */
-        public Parameter get(int index)
-        {
+        public Parameter get(int index) {
             return parameters[index];
         }
         
@@ -563,12 +487,9 @@ public class Ilk<T>
          *            The name of the type parameter.
          * @return The key for the type parameter at the given index.
          */
-        public Parameter get(String name)
-        {
-            for (Parameter parameter : parameters)
-            {
-                if (name.equals(parameter.getName()))
-                {
+        public Parameter get(String name) {
+            for (Parameter parameter : parameters) {
+                if (name.equals(parameter.getName())) {
                     return parameter;
                 }
             }
@@ -588,18 +509,13 @@ public class Ilk<T>
          * @return True if the key can be assigned to an object represented by
          *         this key.
          */
-        public boolean isAssignableFrom(Key key)
-        {
+        public boolean isAssignableFrom(Key key) {
             boolean assignable = keyClass.isAssignableFrom(key.keyClass)  && parameters.length == key.parameters.length;
-            for (int i = 0; assignable && i < parameters.length; i++)
-            {
+            for (int i = 0; assignable && i < parameters.length; i++) {
                 Key subKey = parameters[i].getKey();
-                if (subKey.getWildcard() == Wildcard.LOWER)
-                {
+                if (subKey.getWildcard() == Wildcard.LOWER) {
                     assignable = key.parameters[i].getKey().isAssignableFrom(subKey);
-                }
-                else
-                {
+                } else {
                     assignable = subKey.isAssignableFrom(key.parameters[i].getKey());
                 }
             }
@@ -617,14 +533,11 @@ public class Ilk<T>
          *            The object to test for equality.
          */
         @Override
-        public boolean equals(Object object)
-        {
-            if (object instanceof Key)
-            {
+        public boolean equals(Object object) {
+            if (object instanceof Key) {
                 Key key = (Key) object;
                 boolean equals = keyClass.equals(key.keyClass) && wildcard == key.wildcard && parameters.length == key.parameters.length;
-                for (int i = 0; equals && i < parameters.length; i++)
-                {
+                for (int i = 0; equals && i < parameters.length; i++) {
                     equals = parameters[i].equals(key.parameters[i]);
                 }
                 return equals;
@@ -640,27 +553,23 @@ public class Ilk<T>
          * @return The hash code.
          */
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return hashCode;
         }
-        
+
         /**
          * Create a string representation of this super type token.
          * 
          * @return A string representation of this super type token.
          */
         @Override
-        public String toString()
-        {
+        public String toString() {
             StringBuilder newString = new StringBuilder();
             newString.append(keyClass.getName());
-            if (parameters.length != 0)
-            {
+            if (parameters.length != 0) {
                 newString.append("<");
                 String separator = "";
-                for (Parameter key : parameters)
-                {
+                for (Parameter key : parameters) {
                     newString.append(separator).append(key);
                     separator = ", ";
                 }
@@ -671,8 +580,7 @@ public class Ilk<T>
     }
     
     // TODO Document.
-    public final static class Box implements Serializable
-    {
+    public final static class Box implements Serializable {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
@@ -690,19 +598,17 @@ public class Ilk<T>
          * @param object
          *            The object.
          */
-        Box(Key key, Object object)
-        {
+        Box(Key key, Object object) {
             this.key = key;
             this.object = object;
         }
-        
+
         /**
          * Get the ilk key.
          * 
          * @return The ilk key.
          */
-        public Key getKey()
-        {
+        public Key getKey() {
             return key;
         }
         
@@ -711,16 +617,13 @@ public class Ilk<T>
          * 
          * @return The object.
          */
-        public Object getObject()
-        {
+        public Object getObject() {
             return object;
         }
 
         // TODO Document.
-        public <C> C cast(Ilk<C> ilk)
-        {
-            if (ilk.key.isAssignableFrom(key))
-            {
+        public <C> C cast(Ilk<C> ilk) {
+            if (ilk.key.isAssignableFrom(key)) {
                 return new UncheckedCast<C>().cast(object);
             }
             throw new ClassCastException();

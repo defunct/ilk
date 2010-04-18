@@ -12,8 +12,7 @@ package com.goodworkalan.ilk;
  * @param <T>
  *            The type to cast to.
  */
-class UncheckedCast<T>
-{
+class UncheckedCast<T> {
     /**
      * Cast the given object to the parameterized type of this unchecked cast
      * instance.
@@ -23,8 +22,7 @@ class UncheckedCast<T>
      * @return The object cast to the target type of this unchecked cast.
      */
     @SuppressWarnings("unchecked")
-    public T cast(Object object) 
-    {
+    public T cast(Object object) {
         return (T) object;
     }
 }
