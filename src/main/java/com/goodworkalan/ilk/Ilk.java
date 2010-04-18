@@ -55,7 +55,7 @@ public class Ilk<T>
         // getGenericSuperclass() instead of getSuperclass().  
         Type superClass = klass.getGenericSuperclass();  
        
-        if (superClass instanceof Class)
+        if (superClass instanceof Class<?>)
         {  
             // Type has four subinterface:  
             // (1) GenericArrayType: component type is either a  
@@ -361,7 +361,7 @@ public class Ilk<T>
             {
                 return (Class<?>) ((ParameterizedType) type).getRawType();
             }
-            else if (type instanceof Class)
+            else if (type instanceof Class<?>)
             {
                 return (Class<?>) type;
             }
@@ -384,7 +384,7 @@ public class Ilk<T>
                 for (int i = 0; i < parameters.length; i++)
                 {
                     Type actualType = pt.getActualTypeArguments()[i];
-                    if (((actualType instanceof WildcardType) || (actualType instanceof TypeVariable)) && key != null)
+                    if (((actualType instanceof WildcardType) || (actualType instanceof TypeVariable<?>)) && key != null)
                     {
                         Class<?> rawType = (Class<?>) pt.getRawType();
                         Class<?> keyType = key.getKeyClass();
@@ -417,7 +417,7 @@ public class Ilk<T>
                     else
                     {
                         String parameterName = ((Class<?>) pt.getRawType()).getTypeParameters()[i].getName();
-                        if ((actualType instanceof TypeVariable) && !queue.isEmpty()) 
+                        if ((actualType instanceof TypeVariable<?>) && !queue.isEmpty()) 
                         {
                             if (!queue.isEmpty())
                             {
@@ -454,7 +454,7 @@ public class Ilk<T>
                 }
                 return parameters;
             }
-            else if (type instanceof Class)
+            else if (type instanceof Class<?>)
             {
                 return new Parameter[0];
             }
@@ -477,7 +477,7 @@ public class Ilk<T>
                 if (((ParameterizedType) meta).getRawType().equals(rawType))
                 {
                     Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable)
+                    if (actualType instanceof TypeVariable<?>)
                     {
                         String name = ((TypeVariable<?>) actualType).getName();
                         String newName = rawType.getTypeParameters()[i].getName();
@@ -497,7 +497,7 @@ public class Ilk<T>
                 if (((ParameterizedType) meta).getRawType().equals(rawType))
                 {
                     Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable)
+                    if (actualType instanceof TypeVariable<?>)
                     {
                         String name = ((TypeVariable<?>) actualType).getName();
                         String newName = rawType.getTypeParameters()[i].getName();
