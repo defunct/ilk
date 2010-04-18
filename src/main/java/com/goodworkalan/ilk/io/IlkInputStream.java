@@ -12,8 +12,7 @@ import com.goodworkalan.ilk.Ilk;
  * 
  * @author Alan Gutierrez
  */
-public class IlkInputStream extends ObjectInputStream
-{
+public class IlkInputStream extends ObjectInputStream {
     /**
      * Wrap the given object input stream with an object input stream that
      * records super type tokens.
@@ -23,8 +22,7 @@ public class IlkInputStream extends ObjectInputStream
      * @throws IOException
      *             If an I/O error occurs.
      */
-    public IlkInputStream(InputStream in) throws IOException
-    {
+    public IlkInputStream(InputStream in) throws IOException {
         super(in);
     }
 
@@ -46,11 +44,9 @@ public class IlkInputStream extends ObjectInputStream
      *                If the object written is not of the type indicated by the
      *                super type token.
      */
-    public <T> T readObject(Ilk<T> ilk) throws IOException, ClassNotFoundException
-    {
+    public <T> T readObject(Ilk<T> ilk) throws IOException, ClassNotFoundException {
         Object object = readObject();
-        if (!(object instanceof Ilk.Box))
-        {
+        if (!(object instanceof Ilk.Box)) {
             throw new IOException("Object Ilk not recorded.");
         }
         return ((Ilk.Box) object).cast(ilk);

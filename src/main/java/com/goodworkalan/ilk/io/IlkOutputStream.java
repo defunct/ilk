@@ -12,8 +12,7 @@ import com.goodworkalan.ilk.Ilk;
  * 
  * @author Alan Gutierrez
  */
-public class IlkOutputStream extends ObjectOutputStream
-{
+public class IlkOutputStream extends ObjectOutputStream {
     /**
      * Wrap the given output stream with an object output stream that records
      * super type tokens.
@@ -23,8 +22,7 @@ public class IlkOutputStream extends ObjectOutputStream
      * @throws IOException
      *             If an I/O error occurs.
      */
-    public IlkOutputStream(OutputStream out) throws IOException
-    {
+    public IlkOutputStream(OutputStream out) throws IOException {
         super(out);
     }
 
@@ -41,8 +39,7 @@ public class IlkOutputStream extends ObjectOutputStream
      * @throws IOException
      *             If an I/O error occurs.
      */
-    public <T> void writeObject(Ilk<T> ilk, T object) throws IOException
-    {
+    public <T> void writeObject(Ilk<T> ilk, T object) throws IOException {
         writeObject(ilk.box(object));
     }
 }

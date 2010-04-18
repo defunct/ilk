@@ -12,11 +12,9 @@ import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.io.IlkInputStream;
 import com.goodworkalan.ilk.io.IlkOutputStream;
 
-public class IlkStreamTest
-{
+public class IlkStreamTest {
     @Test
-    public void stream() throws IOException, ClassNotFoundException
-    {
+    public void stream() throws IOException, ClassNotFoundException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         IlkOutputStream out = new IlkOutputStream(bytes);
         out.writeObject(new Ilk<String>() { }, "Hello, World!");
@@ -26,9 +24,8 @@ public class IlkStreamTest
         assertEquals(in.readObject(new Ilk<String>() { }), "Hello, World!");
     }
     
-    @Test(expectedExceptions=IOException.class)
-    public void notAPair() throws IOException, ClassNotFoundException
-    {
+    @Test(expectedExceptions = IOException.class)
+    public void notAPair() throws IOException, ClassNotFoundException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         IlkOutputStream out = new IlkOutputStream(bytes);
         out.writeObject("Hello, World!");
