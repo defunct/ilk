@@ -602,6 +602,11 @@ public class Ilk<T> {
             this.key = key;
             this.object = object;
         }
+        
+        public Box(Object object) {
+            this.key = new Key(object.getClass());
+            this.object = object;
+        }
 
         /**
          * Get the ilk key.
