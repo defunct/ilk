@@ -2,9 +2,13 @@ package com.goodworkalan.ilk;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,6 +22,41 @@ import java.util.TreeSet;
 import org.testng.annotations.Test;
 
 public class IlkTest {
+    /** Test the class constructor. */
+    @Test
+    public void classConstructor() {
+        Ilk<Number> number = new Ilk<Number>(Number.class);
+        Ilk<Integer> integer = new Ilk<Integer>(Integer.class);
+        assertTrue(number.key.isAssignableFrom(integer.key));
+    }
+    
+    /** Test failed construction. */
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void tooGeneric() {
+        new Ilk<List<String>>();
+    }
+    
+    /** Test to string. */
+    @Test
+    public void string() {
+        assertEquals(new Ilk<List<String>>() {}.key.toString(), "java.util.List<java.lang.String>");
+    }
+    
+    /** Test copy constructor. */
+    @Test
+    public void copy() {
+        Ilk.Key key = new Ilk.Key(new Ilk<List<String>>() {}.key);
+        assertEquals(key.toString(),  "java.util.List<java.lang.String>");
+    }
+    
+    /** Test parameter get. */
+    @Test
+    public void get() {
+        Ilk.Key key = new Ilk.Key(new Ilk<List<String>>() {}.key);
+        assertNotNull(key.get("E"));
+        assertNull(key.get("Z"));
+    }
+
     @Test
     public void constructor() {
         Ilk.Key key = new Ilk<Map<String, List<Integer>>>() { }.key;
@@ -29,13 +68,13 @@ public class IlkTest {
     @Test
     public void canContain() {
         Ilk.Key mapKey = new Ilk<Map<String, List<Integer>>>() {}.key;
-        assertTrue(mapKey.get(1).getKey().equals(new Ilk<List<Integer>>() { }.key));
-        assertFalse(mapKey.get(1).getKey().equals(new Ilk<List<String>>() { }.key));
+        assertTrue(mapKey.parameters.get(1).key.isAssignableFrom(new Ilk<List<Integer>>() { }.key));
+        assertFalse(mapKey.parameters.get(1).key.isAssignableFrom(new Ilk<List<String>>() { }.key));
     }
     
     @Test
     public void assignment() {
-        Ilk.Key to = new Ilk<Map<Number, List<String>>>() { }.key;
+        Ilk.Key to = new Ilk<Map<? extends Number, ? extends List<String>>>() { }.key;
         Ilk.Key from = new Ilk<TreeMap<Integer, ArrayList<String>>>() { }.key;
         assertTrue(to.isAssignableFrom(from));
         assertFalse(to.isAssignableFrom(new Ilk<TreeMap<Integer, HashSet<String>>>() { }.key));
@@ -55,15 +94,36 @@ public class IlkTest {
     
     private <T> void replace(Ilk<T> ilk) {
         Ilk<Map<T, Integer>> mapKey = new Ilk<Map<T, Integer>>(ilk.key) { };
-        Ilk.Box pair = mapKey.box(new HashMap<T, Integer>());
-        Map<String, Integer> map = pair.cast(new Ilk<Map<String, Integer>>() { });
+        Ilk.Box box = mapKey.box(new HashMap<T, Integer>());
+        Map<String, Integer> map = box.cast(new Ilk<Map<String, Integer>>() { });
         assertTrue(map.isEmpty());
     }
     
     @Test
     public void wildcard() {
-        Ilk.Box pair = new Ilk<List<Long>>() { }.box(Collections.singletonList(1L));
-        assertEquals(pair.cast(new Ilk<List<? super Number>>() { }).size(), 1);
+        Ilk.Box box = new Ilk<List<Long>>() { }.box(Collections.singletonList(1L));
+        assertEquals(box.cast(new Ilk<List<? extends Number>>() { }).size(), 1);
+        box = new Ilk<List<Number>>() { }.box(Collections.<Number>singletonList(1L));
+        assertEquals(box.cast(new Ilk<List<? super Number>>() { }).size(), 1);
+    }
+    
+    @Test(expectedExceptions = ClassCastException.class)
+    public void wildcardLowerBounds() {
+        Ilk.Box box = new Ilk<List<Long>>() { }.box(Collections.singletonList(1L));
+        box.cast(new Ilk<List<? super Number>>() { });
+    }
+    
+    public static class Foo<T extends Number> {
+    }
+    
+    @Test
+    public void foo() {
+        // FIXME Uh, oh. More to play with.
+        TypeVariable<?> tv = Foo.class.getTypeParameters()[0];
+        for (Type bound : tv.getBounds()) {
+            System.out.println(bound);
+        }
+        System.out.println(tv);
     }
     
     @Test
