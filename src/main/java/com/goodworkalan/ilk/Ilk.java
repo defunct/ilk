@@ -1,5 +1,7 @@
 package com.goodworkalan.ilk;
 
+import static com.goodworkalan.ilk.Types.getRawClass;
+
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
@@ -8,10 +10,7 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
-import java.util.Queue;
-
 import java.util.List;
 
 /**
@@ -43,7 +42,7 @@ public class Ilk<T> {
      * This method is meant to be called from anonymous subclasses of
      * <code>Ilk</code>.
      */
-    protected Ilk(Key... keys) {
+    protected Ilk() {
         // Give me class information.
         Class<?> klass = getClass();
 
@@ -81,12 +80,12 @@ public class Ilk<T> {
         ParameterizedType pt = (ParameterizedType) superClass;  
        
         // We have one type argument in TypeRefence<T>: T.  
-        key = new Ilk.Key(pt.getActualTypeArguments()[0], keys);  
+        key = new Ilk.Key(pt.getActualTypeArguments()[0]);  
     }
 
     /**
      * Create a box that contains the given object that can return the given
-     * object cast to the appropriate parameterized type using a new ilk
+     * object cast to the appropriate parameterized type using another ilk
      * instance.
      * 
      * @param object
@@ -104,216 +103,10 @@ public class Ilk<T> {
      */
     public List<Constructor<T>> getConstructors() {
         List<Constructor<T>> constructors = new ArrayList<Constructor<T>>();
-        for (Constructor<?> constructor : key.bounds.get(0).boundaryClass.getConstructors()) {
-            constructors.add(new UncheckedCast<Constructor<T>>().cast(constructor));
+        for (Constructor<?> constructor : getRawClass(key.type).getConstructors()) {
+            constructors.add(UncheckedCast.<Constructor<T>>cast(constructor));
         }
         return constructors;
-    }
-
-    /**
-     * A type parameter for a super type token. This type parameter includes the
-     * parameter name plus a super type token key. It can be used to determine
-     * the actual types of a parameterized type that only has wildcard type
-     * information available.
-     * 
-     * @author Alan Gutierrez
-     */
-    public final static class Parameter implements Serializable {
-        /** The serial version id. */
-        private static final long serialVersionUID = 1L;
-
-        /**
-         * The parameter name that identifies this type definition in the type
-         * parameter definitions of a parent key class.
-         */
-        public final String name;
-        
-        /** The super type tokens for this type definition. */
-        public final Key key;
-        
-        /**
-         * Create a parameter.
-         * 
-         * @param name
-         *            The parameter name.
-         * @param key
-         *            The super type tokens for this type definition.
-         */
-        public Parameter(String name, Key key) {
-            this.name = name;
-            this.key = key;
-        }
-
-        /**
-         * Create a deep copy of this parameter but with the new name. This will
-         * create a copy of this parameter and the parameter type declarations
-         * of the key referenced by this parameter.
-         * 
-         * @param parameter
-         *            The parameter to copy.
-         */
-        public Parameter(Parameter parameter) {
-            this(parameter.name, parameter.key);
-        }
-
-        /**
-         * Create a copy of the parameter with the current name.
-         * 
-         * @param parameter
-         *            The parameter to copy.
-         * @param name
-         *            The new name.
-         */
-        public Parameter(Parameter parameter, String name) {
-            this(name, parameter.key);
-        }
-
-        /**
-         * Compares the parameter to the given object. Returns true if the given
-         * object is a parameter with a name and key value are equal to the
-         * value name and key value of this parameter.
-         * 
-         * @param object
-         *            An object to compare against this parameter.
-         * @return True if the object is a parameter with a name and key value
-         *         equal to that of this parameter.
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (object == this) {
-                return true;
-            }
-            if (object instanceof Parameter) {
-                Parameter parameter = (Parameter) object;
-                return name.equals(parameter.name) && key.equals(parameter.key);
-            }
-            return false;
-        }
-
-        /**
-         * Returns a hash code for this parameter. The hash code combines the
-         * hash code of name and key of this parameter.
-         * 
-         * @return A hash code.
-         */
-        @Override
-        public int hashCode() {
-            int hashCode = 1;
-            hashCode = hashCode * 37 + name.hashCode();
-            hashCode = hashCode * 37 + key.hashCode();
-            return hashCode;
-        }
-        
-        // TODO Document.
-        @Override
-        public String toString() {
-            return key.bounds.get(0).toString();
-        }
-    }
-
-    /**
-     * The wildcard types.
-     * 
-     * @author Alan Gutierrez
-     */
-    public enum Wildcard {
-        /** The key is not parameterized. */
-        NONE,
-        /** The key is not a wildcard. */
-        EXACT,
-        /** The key is an upper wildcard specified by extends. */
-        UPPER,
-        /** The key is lower wildcard specified by super. */
-        LOWER
-    }
-    
-    public final static class Bound {
-        /** The wildcard type. */
-        public final Wildcard wildcard;
-
-        /** The class of the boudary. */
-        public final Class<?> boundaryClass;
-
-        /**
-         * Create a bound with the given boundary class and the given wildcard
-         * type.
-         * 
-         * @param boundryClass
-         *            The class of the boundary.
-         * @param wildcard
-         *            The wildcard type.
-         */
-        public Bound(Class<?> boundryClass, Wildcard wildcard) {
-            this.boundaryClass = boundryClass;
-            this.wildcard = wildcard;
-        }
-        
-        public boolean isWithBounds(Class<?> from) {
-            switch (wildcard) {
-            case EXACT:
-                return boundaryClass.equals(from);
-            case NONE:
-            case UPPER:
-                return boundaryClass.isAssignableFrom(from);
-            default:
-                return from.isAssignableFrom(boundaryClass);
-            }
-        }
-
-        /**
-         * This object equals the given object if the given object is also a
-         * bound and the boundary classes and wildcard are equal.
-         * 
-         * @param object
-         *            The object to test for equality.
-         * @return True if the object is equal to this object.
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (object instanceof Bound) {
-                Bound bound = (Bound) object;
-                return boundaryClass.equals(bound.boundaryClass) && wildcard.equals(bound.wildcard);
-            }
-            return false;
-        }
-
-        /**
-         * Generate a hash code as a combination of the hash code of the
-         * boundary class hash code and the wildcard hash code.
-         * 
-         * @return The hash code.
-         */
-        @Override
-        public int hashCode() {
-            int hashCode = 1;
-            hashCode = hashCode * 37 + boundaryClass.hashCode();
-            hashCode = hashCode * 37 + wildcard.hashCode();
-            return hashCode;
-        }
-        
-        // TODO Document.
-        @Override
-        public String toString() {
-            if (wildcard == Wildcard.LOWER) {
-                return "? super " + boundaryClass.getCanonicalName();
-            } else if (wildcard == Wildcard.UPPER) {
-                return "? extends " + boundaryClass.getCanonicalName();
-            }
-            return boundaryClass.getCanonicalName();
-        }
-    }
-
-    /**
-     * Create an array from the variable argument list.
-     * 
-     * @param <T>
-     *            The type of array.
-     * @param objects
-     *            The array elements.
-     * @return An array containing the array elements.
-     */
-    static final<T> T[] array(T...objects) { 
-        return objects;
     }
     
     /**
@@ -323,216 +116,108 @@ public class Ilk<T> {
      * 
      * @author Alan Gutierrez
      */
-    public final static class Key implements Serializable {
+    public final static class Key implements Serializable, Comparable<Key> {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
         /** The cached hash code for this key. */
         private final int hashCode;
         
-        /** The type parameters. */
-        public final List<Parameter> parameters;
+        /** The type. */
+        public final Type type;
         
-        /** The type boundaries. */
-        public final List<Bound> bounds;
+        /** The raw type as a class. */
+        public final Class<?> rawClass;
 
         /**
-         * Create a key for the given type.
-         * <p>
-         * The constructor will recursively create a key for each of the type
-         * parameters of the type. It will calculate and cache the hash code,
-         * since it is assumed that this class will primarily be used as a key
-         * in map lookups.
+         * Create a key around the given type.
          * 
          * @param type
-         *            The type for which to generate a key.
-         * @param keys
-         *            Key queue.
+         *            The type.
          */
-        public Key(Type type, Key... keys) {
-            this(getBounds(type), getParameterKeys(type, null, toQueue(keys)));
-        }
-        
-        // TODO Document.
-        private static Queue<Key> toQueue(Key... keys) {
-            return new LinkedList<Key>(Arrays.asList(keys));
+        public Key(Type type) {
+            this.type = type;
+            this.rawClass = getRawClass(type);
+            this.hashCode = makeHashCode(type);
         }
 
         /**
-         * Construct a type key from the given type using the given {@link Ilk}
-         * generated key to determine the actual type when wildcard types are
-         * encountered in the given type.
+         * Using the given source type to lookup actual type parameters, resolve
+         * the actual value of the given type variable.
          * 
-         * @param type
-         *            The type for which to generate a key.
-         * @param key
-         *            An {@link Ilk} generated key used to lookup actual types
-         *            for wildcard types.
+         * @param source
+         *            The source type to lookup actual type parameters.
+         * @param typeVariable
+         *            The type variable to actualize.
+         * @return The actual parameterized type or class of the type variable.
          */
-        public Key(Key key, Type type) {
-            this(getBounds(type), getParameterKeys(type, key, toQueue()));
-        }
-
-        private static Bound[] getBounds(Type type) {
-            return array(new Bound(getKeyClass(type), Wildcard.NONE));
+        private Type actualize(Type derived, TypeVariable<?> typeVariable) {
+            Type actualized = typeVariable;
+            while (actualized instanceof TypeVariable<?>) {
+                Class<?> declaredBy = (Class<?>) ((TypeVariable<?>) actualized).getGenericDeclaration();
+                Type createdWith = find(derived, declaredBy);
+                Type[] parameters = declaredBy.getTypeParameters();
+                for (int i = 0; ; i++)  {
+                    if (parameters[i].equals(actualized)) {
+                        actualized = ((ParameterizedType) createdWith).getActualTypeArguments()[i];
+                        break;
+                    }
+                }
+            }
+            return actualized;
         }
 
         /**
-         * Construct a key with the given key class, parameter name and type
-         * parameter keys.
+         * Get a key that encapsulates the actual type parameters of the given
+         * super class or super interface of the raw class of this key.
          * 
          * @param keyClass
-         *            The key class.
-         * @param parameterName
-         *            The type parameter name of the key, if any.
-         * @param parameters
-         *            The parameter keys.
+         *            The super class or super interface.
+         * @return A key that encapsulates the actual type parameters of the
+         *         given super class or null if the given key class is not a
+         *         super class or super interface of the raw class of this key.
          */
-        Key(Bound[] bounds, Parameter[] parameters) {
-            this.bounds = Collections.unmodifiableList(Arrays.asList(bounds));
-            this.parameters = Collections.unmodifiableList(Arrays.asList(parameters));
-            this.hashCode = getHashCode();
-        }
-
-        /**
-         * Generate a hash code by combining the hash code of the class of the
-         * type token with the hash code of each of the type parameters of type
-         * token.
-         * 
-         * @return The hash code.
-         */
-        private int getHashCode() {
-            int hashCode = 1999;
-            hashCode = hashCode * 37 + bounds.hashCode();
-            hashCode = hashCode * 37 + parameters.hashCode();
-            return hashCode;
-       }
-
-        /**
-         * Return the class of the super type token type.
-         * 
-         * @param type
-         *            The type.
-         * @param parameter
-         *            The type parameter definition in the parent class or null.
-         * @return The class of the super type token.
-         */
-        private static Class<?> getKeyClass(Type type) {
-            if (type instanceof ParameterizedType) {
-                return (Class<?>) ((ParameterizedType) type).getRawType();
-            } else if (type instanceof Class<?>) {
-                return (Class<?>) type;
-            }
-            throw new IllegalArgumentException();
-        }
-        
-        /**
-         * Create an array of keys for the type parameters of the given type.
-         * 
-         * @param type
-         *            The type.
-         * @return An array of keys for the type parameters of the given type.
-         */
-        private static Parameter[] getParameterKeys(Type type, Key key, Queue<Key> queue) {
-            if (type instanceof ParameterizedType) {
-                ParameterizedType pt = (ParameterizedType) type;
-                Parameter[] parameters = new Parameter[pt.getActualTypeArguments().length];
-                for (int i = 0; i < parameters.length; i++) {
-                    Type actualType = pt.getActualTypeArguments()[i];
-                    if (((actualType instanceof WildcardType) || (actualType instanceof TypeVariable<?>)) && key != null) {
-                        Class<?> rawType = (Class<?>) pt.getRawType();
-                        Class<?> keyType = key.bounds.get(0).boundaryClass;
-                        if (rawType.isAssignableFrom(keyType)) {
-                            Parameter parameter = null;
-                            for (Type meta : keyType.getGenericInterfaces()) {
-                                parameter = interfaces(i, key, rawType, meta);
-                                if (parameter != null) {
-                                    break;
-                                }
-                            }
-                            if (parameter == null) {
-                                parameter = superclasses(i, key, rawType, keyType.getGenericSuperclass());
-                            }
-                            if (parameter == null) {
-                                throw new IllegalArgumentException();
-                            }
-                            parameters[i] = parameter;
-                        } else {
-                            throw new IllegalArgumentException();
-                        }
-                    } else {
-                        String parameterName = ((Class<?>) pt.getRawType()).getTypeParameters()[i].getName();
-                        if (actualType instanceof TypeVariable<?>) {
-                            if (queue.isEmpty())                            {
-                                throw new IllegalArgumentException();
-                            }
-                            parameters[i] = new Parameter(parameterName, new Key(queue.poll()));
-                        } else if (actualType instanceof WildcardType) {
-                            Bound[] bounds = null;
-                            WildcardType wt = (WildcardType) actualType;
-                            if (wt.getLowerBounds() != null && wt.getLowerBounds().length != 0) {
-                                bounds = array(new Bound(getKeyClass(wt.getLowerBounds()[0]), Wildcard.LOWER)); 
-                            } 
-                            if (wt.getUpperBounds() != null && wt.getUpperBounds().length != 0) {
-                                Bound bound = new Bound(getKeyClass(wt.getUpperBounds()[0]), Wildcard.UPPER);
-                                bounds = bounds == null ? array(bound) : array(bounds[0], bound);
-                            } 
-                            if (bounds == null) {
-                                bounds = array(array(new Bound(getKeyClass(wt.getUpperBounds()[0]), Wildcard.NONE)));
-                            }
-                            parameters[i] = new Parameter(parameterName, new Key(bounds, new Parameter[0]));
-                        } else {
-                            parameters[i] = new Parameter(parameterName, new Key(array(new Bound(getKeyClass(actualType), Wildcard.EXACT)), getParameterKeys(actualType, key == null ? null : key.parameters.get(i).key, queue)));
-                        }
+        public Key getSuperKey(Class<?> keyClass) {
+            Type found = find(type, keyClass);
+            if (found != null) {
+                if (found instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) found;
+                    Type[] parameters = new Type[keyClass.getTypeParameters().length];
+                    for (int i = 0, stop = parameters.length; i < stop; i++) {
+                        parameters[i] = actualize(type, getRawClass(found).getTypeParameters()[i]);
                     }
+                    return new Key(new Types.ParameterizedType(pt, parameters));
                 }
-                return parameters;
-            } else if (type instanceof Class<?>) {
-                return new Parameter[0];
-            } else if (type instanceof WildcardType) {
-                return getParameterKeys(key.bounds.get(0).boundaryClass, key, queue);
-            }
-            throw new IllegalArgumentException();
-        }
-
-        // TODO Document.
-        private static Parameter superclasses(int i, Key lookup, Class<?> rawType, Type meta) {
-            if (meta == null) {
-                return null;
-            }
-            if (meta instanceof ParameterizedType) {
-                if (((ParameterizedType) meta).getRawType().equals(rawType)) {
-                    Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable<?>) {
-                        String name = ((TypeVariable<?>) actualType).getName();
-                        String newName = rawType.getTypeParameters()[i].getName();
-                        return new Parameter(lookup.get(name), newName);
-                    }
-                }
-                return superclasses(i, lookup, rawType, ((Class<?>) ((ParameterizedType) meta).getRawType()).getGenericSuperclass());
+                return new Key(found);
             }
             return null;
         }
 
-        // TODO Document.
-        private static Parameter interfaces(int i, Key lookup, Class<?> rawType, Type meta) {
-            if (meta instanceof ParameterizedType) {
-                if (((ParameterizedType) meta).getRawType().equals(rawType)) {
-                    Type actualType = ((ParameterizedType) meta).getActualTypeArguments()[i];
-                    if (actualType instanceof TypeVariable<?>) {
-                        String name = ((TypeVariable<?>) actualType).getName();
-                        String newName = rawType.getTypeParameters()[i].getName();
-                        return new Parameter(lookup.get(name), newName);
-                    }
+        /**
+         * Order keys by first by their assignability, where most derived types
+         * are less than least derived types, then by their to string values.
+         * Most derived types are less than their super types so that ordering
+         * keys creates a series where the most derived type is earlier in the
+         * series than its super types. The series can be used to find a best
+         * match for a type where the most derived is considered the most
+         * specific.
+         * 
+         * @return negative integer if this key is assignable to the given key,
+         *         a positive integer if this key is assignable from the given
+         *         key, or zero if they are both assignable to each other, or if
+         *         no assignments are possible, the result of comparing the to
+         *         string values.
+         */
+        public int compareTo(Key o) {
+            if (isAssignableFrom(o)) {
+                if (o.isAssignableFrom(this)) {
+                    return 0;
                 }
-                for (Type subMeta : ((Class<?>) ((ParameterizedType) meta).getRawType()).getGenericInterfaces()) {
-                    Parameter parameter = interfaces(i, lookup, rawType, subMeta);
-                    if (parameter != null) {
-                        return parameter;
-                    }
-                }
+                return 1;
+            } else if (o.isAssignableFrom(this)) {
+                return -1;
             }
-            return null;
+            return toString().compareTo(o.toString());
         }
 
         /**
@@ -542,26 +227,137 @@ public class Ilk<T> {
          *            The key to copy.
          */
         public Key(Key key) {
-            this.parameters = key.parameters;
-            this.bounds = key.bounds;
+            this.type = key.type;
+            this.rawClass = key.rawClass;
             this.hashCode = key.hashCode;
         }
-        
+
         /**
-         * Return the key for a type parameter of the super type token declared
-         * with the given parameter name.
+         * Using the given type declaration, find the definition of the given
+         * target class in the class hierarchy of the raw class associated with
+         * the type definition. Returns null if the target class is not part of
+         * the class hierarchy of the type definition.
          * 
-         * @param name
-         *            The name of the type parameter.
-         * @return The key for the type parameter at the given index.
+         * @param source
+         *            The type definition.
+         * @param target
+         *            The target class.
+         * @return The type definition of the class in the class hierarchy or
+         *         null if it is not found.
          */
-        public Parameter get(String name) {
-            for (Parameter parameter : parameters) {
-                if (name.equals(parameter.name)) {
-                    return parameter;
+        private Type find(Type source, Class<?> target) {
+            if (getRawClass(source).equals(target)) {
+                return source;
+            }
+            if (target.isInterface()) {
+                LinkedList<Type> interfaces = null;
+                interfaces = new LinkedList<Type>();
+                while (source != null) {
+                    interfaces.addFirst(source);
+                    while (!interfaces.isEmpty()) {
+                        Class<?> candidate = getRawClass(interfaces.removeFirst());
+                        for (Type type : candidate.getGenericInterfaces()) {
+                            if (type instanceof ParameterizedType) {
+                                ParameterizedType pt = (ParameterizedType) type;
+                                if (pt.getRawType().equals(target)) {
+                                    return pt;
+                                }
+                            } else if (type.equals(target)) {
+                                return type;
+                            }
+                        }
+                        interfaces.addAll(Arrays.<Type>asList(candidate.getGenericInterfaces()));
+                    }
+                    source = getRawClass(source).getGenericSuperclass();
+                }
+            } else {
+                for (;;) {
+                    Type candidate = getRawClass(source).getGenericSuperclass();
+                    if (candidate == null) {
+                        break;
+                    }
+                    if (candidate instanceof ParameterizedType) {
+                        ParameterizedType pt = (ParameterizedType) candidate;
+                        if (pt.getRawType().equals(target)) {
+                            return pt;
+                        }
+                    } else if (target.equals(candidate)) {
+                        return candidate;
+                    }
+                    source = candidate;
                 }
             }
             return null;
+        }
+
+        /**
+         * For each element in the to array, if it is a wildcard, evaluate the
+         * wildcard against the element at the same index in the from array,
+         * otherwise test the element for equality against the same the element
+         * at the same index in the from array.
+         * 
+         * @param to
+         *            The types to assign to.
+         * @param from
+         *            The types to assign from.
+         * @return True if the types in from can be assinged to the types in to.
+         */
+        private boolean evaluateWildcards(Type[] to, Type[] from) {
+            for (int i = 0, stop = to.length; i < stop; i++) {
+                if (!evaluateWildcards(to[i], from[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * If the given to type is a wildcard, test the wildcard against the
+         * given from type if it is not also a wildcard, otherwise test the two
+         * types for equalty.
+         * 
+         * @param to
+         *            The type to assign to.
+         * @param from
+         *            The type to assign from.
+         * @return True if the types in from can be assinged to the types in to.
+         */
+        public boolean evaluateWildcards(Type to, Type from ) {
+            if (to instanceof WildcardType && !(from instanceof WildcardType)) {
+                WildcardType toWildcard = (WildcardType) to;
+                for (Type type : toWildcard.getLowerBounds()) {
+                    if (!isAssignableFrom(from, type)) {
+                        return false;
+                    }
+                }
+                for (Type type : toWildcard.getUpperBounds()) {
+                    if (!isAssignableFrom(type, from)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return equals(to, from);
+        }
+
+        /**
+         * Determine of the type given in from can be assigned to type type
+         * given in to.
+         * 
+         * @param to
+         *            The type to assign to.
+         * @param from
+         *            The type to assign from.
+         * @return True if the type from can be assigned to the type to.
+         */
+        private boolean isAssignableFrom(Type to, Type from) {
+            if (getRawClass(to).isAssignableFrom(getRawClass(from))) {
+                if (to instanceof ParameterizedType) {
+                    return equals(((ParameterizedType) to).getActualTypeArguments(), ((ParameterizedType) from).getActualTypeArguments());
+                }
+                return true;
+            }
+            return false;
         }
 
         /**
@@ -578,54 +374,168 @@ public class Ilk<T> {
          *         this key.
          */
         public boolean isAssignableFrom(Key key) {
-            if (!isWithinBounds(key.bounds.get(0).boundaryClass)) {
-                    return false;
-            }
-            if (parameters.size() != key.parameters.size()) {
-                return false;
-            }
-            for (int i = 0, stop = parameters.size(); i < stop; i++) {
-                Parameter parameter = parameters.get(i);
-                Bound bound = key.parameters.get(i).key.bounds.get(0);
-                if (!parameter.key.isWithinBounds(bound.boundaryClass)) {
-                    return false;
+            if (getRawClass(type).isAssignableFrom(getRawClass(key.type))) {
+                if (type instanceof Class<?>) { 
+                    return true;
                 }
-            }
-            return true;
-        }
-        
-        public boolean isWithinBounds(Class<?> boundaryClass) {
-            for (Bound bound : bounds) {
-                if (!bound.isWithBounds(boundaryClass)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        /**
-         * Two keys are equal if the key classes are equal and the keys for each
-         * of the type parameters at each position are equal. That is, both keys
-         * have the name number of type parameters and each of the keys of the
-         * type parameter in this key is equal to the key of type parameter of
-         * the given key at the parallel position.
-         * 
-         * @param object
-         *            The object to test for equality.
-         */
-        @Override
-        public boolean equals(Object object) {
-            if (object instanceof Key) {
-                Key key = (Key) object;
-                return bounds.equals(key.bounds) && parameters.equals(key.parameters);
+                Ilk.Key adjusted = key.getSuperKey(getRawClass(type));
+                return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted.type).getActualTypeArguments());
             }
             return false;
         }
 
         /**
-         * Return a hash code that combines the hash code of the key class with
-         * the hash codes of each of the keys for the type parameters of the key
-         * class.
+         * Two keys are equal if the underlying types are equal. The underlying
+         * types are equal if they are both classes and they are equal, or if
+         * they are one of the other types and all of their properties are
+         * equal.
+         * 
+         * @param object
+         *            The object to test for equality.
+         * @return True if this object is eqaual to the given object.
+         */
+        @Override
+        public boolean equals(Object object) {
+            if (object == this) {
+                return true;
+            }
+            if (object instanceof Key) {
+                return equals(type, ((Key) object).type);
+            }
+            return false;
+        }
+
+        /**
+         * Determine if the two arrays are the same length and if each element
+         * in the left array is equal to the element at the same index in the
+         * right array.
+         * 
+         * @param left
+         *            One of two arrays to compare for equality.
+         * @param right
+         *            One of two arrays to compare for equality.
+         * @return True if the arrays are equal.
+         */
+        private static boolean equals(Type[] left, Type[] right) {
+            for (int i = 0, stop = left.length; i < stop; i++) {
+                if (!equals(left[i], right[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         * Test two parameterized types to determine if they are equal. Two
+         * parameterized types are equal if their owner types are equal or are
+         * both null, their raw types are equal, their actual parameters arrays
+         * are the same length and each element in the actual parameters array
+         * is equal to the element in at the same index of the other actual
+         * parameter array.
+         * 
+         * @param left
+         *            One of two parameterized types to test for equality.
+         * @param right
+         *            One of two parameterized types to test for equality.
+         * @return True if the parameterized types are equal.
+         */
+        private static boolean equals(ParameterizedType left, ParameterizedType right) {
+            return equals(left.getRawType(), right.getRawType())
+                && equals(left.getOwnerType(), right.getOwnerType())
+                && equals(left.getActualTypeArguments(), right.getActualTypeArguments());
+        }
+
+        /**
+         * Test two wildcard types to determine if they are equal. Two
+         * parameterized types are equal the types of their upper and lower
+         * bounds are equal. For now, we are only encountering arrays of bounds
+         * with one element, but if we do encounter arrays of bounds with more
+         * than one element, we'll need to implement set equality.
+         * 
+         * @param left
+         *            One of two parameterized types to test for equality.
+         * @param right
+         *            One of two parameterized types to test for equality.
+         * @return True if the parameterized types are equal.
+         */
+        private static boolean equals(WildcardType left, WildcardType right) {
+            return equals(left.getLowerBounds(), right.getLowerBounds())
+                && equals(left.getUpperBounds(), right.getUpperBounds());
+        }
+
+        /**
+         * Determine if the two types are equal. Two types are equal if they are
+         * the same class and all of their properties are equal.
+         * <p>
+         * Equality does not appear to be implemented for the reflection types,
+         * so we implement it here.
+         * 
+         * @param left
+         *            One of two types to compare.
+         * @param right
+         *            One of two types to compare.
+         * @return True if the two types are equal.
+         */
+        private static boolean equals(Type left, Type right) {
+            if (left == right) {
+                return true;
+            }
+            if (left instanceof ParameterizedType) {
+                if (right instanceof ParameterizedType) {
+                    return equals((ParameterizedType) left, (ParameterizedType) right);
+                }
+            }
+            if (left instanceof WildcardType) {
+                if (right instanceof WildcardType) {
+                    return equals((WildcardType) left, (WildcardType) right);
+                }
+            }
+            return left.equals(right);
+        }
+
+        /**
+         * Generate a hash code from the given parameterized type. Create a hash
+         * code by combining the hash codes of the raw type, the owner type if
+         * any, and the actual type parameters.
+         * 
+         * @param pt
+         *            The parameterized type.
+         * @return The hash code.
+         */
+        private static int makeHashCode(ParameterizedType pt) {
+            int hashCode = 1999;
+            Type[] actual = pt.getActualTypeArguments();
+            for (int i = 0, stop = actual.length; i < stop; i++) {
+                hashCode = hashCode * 37 + makeHashCode(actual[i]);
+            }
+            hashCode = hashCode * 37 + makeHashCode(pt.getOwnerType());
+            hashCode = hashCode * 37 + makeHashCode(pt.getRawType());
+            return hashCode;
+        }
+
+        /**
+         * Generate a hash code from the given type. The method will recursively
+         * generate a hash code that combines the hash codes of the type and all
+         * of the type parameters if the given type is a parameterized type.
+         * 
+         * @param type
+         *            The type.
+         * @return The hash code.
+         */
+        private static int makeHashCode(Type type) {
+            if (type == null) {
+                return 7;
+            }
+            if (type instanceof ParameterizedType) {
+                return makeHashCode((ParameterizedType) type);
+            }
+            return type.hashCode();
+        }
+
+        /**
+         * Return a hash code that combines the hash code of the underlying type
+         * which includes all of the type parameters if the underlying type is a
+         * parameterized type.
          * 
          * @return The hash code.
          */
@@ -635,40 +545,38 @@ public class Ilk<T> {
         }
 
         /**
-         * Create a string representation of this super type token.
+         * Create a string that looks like the type declaration.
          * 
-         * @return A string representation of this super type token.
+         * @return A string.
          */
         @Override
         public String toString() {
-            StringBuilder newString = new StringBuilder();
-            newString.append(bounds.get(0).toString());
-            if (parameters.size() != 0) {
-                newString.append("<");
-                String separator = "";
-                for (Parameter parameter : parameters) {
-                    newString.append(separator).append(parameter);
-                    separator = ", ";
-                }
-                newString.append(">");
+            if (type instanceof Class<?>) {
+                return ((Class<?>) type).getName();
             }
-            return newString.toString();
+            return type.toString();
         }
     }
-    
-    // TODO Document.
+
+    /**
+     * A type-safe heterogeneous container for a single generic object that
+     * preserves type information and safely casts the generic object back to
+     * its generic type.
+     * 
+     * @author Alan Gutierrez
+     */
     public final static class Box implements Serializable {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
-        /** The ilk key. */
-        private final Key key;
+        /** The super type token key. */
+        public final Key key;
 
         /** The object. */
-        private final Object object;
+        public final Object object;
 
         /**
-         * Create a pair that associates the given key with the given object.
+         * Create a box that associates the given key with the given object.
          * 
          * @param key
          *            The key.
@@ -679,34 +587,48 @@ public class Ilk<T> {
             this.key = key;
             this.object = object;
         }
-        
-        public Box(Object object) {
-            this.key = new Key(object.getClass());
-            this.object = object;
+
+//        /**
+//         * Create a box around the given object of a class that has no generic
+//         * type parameters.
+//         * 
+//         * @param object
+//         *            The object to box.
+//         */
+//        public Box(Object object) {
+//            this.key = new Key(object.getClass());
+//            this.object = object;
+//        }
+
+        /**
+         * Cast the given object to the given class.
+         * 
+         * @param <C>
+         *            The type to cast to.
+         * @param castClass
+         *            The class to cast to.
+         * @return The contained object cast to the class.
+         * @exception ClassCastException
+         *                If the object is not of the given type.
+         */
+        public <C> C cast(Class<C> castClass) {
+            return cast(new Ilk<C>(castClass));
         }
 
         /**
-         * Get the ilk key.
+         * Cast the given object to the given class.
          * 
-         * @return The ilk key.
+         * @param <C>
+         *            The type to cast to.
+         * @param ilk
+         *            The super type token of the type to cast to.
+         * @return The contained object cast to the type.
+         * @exception ClassCastException
+         *                If the object is not of the given type.
          */
-        public Key getKey() {
-            return key;
-        }
-        
-        /**
-         * Get the object.
-         * 
-         * @return The object.
-         */
-        public Object getObject() {
-            return object;
-        }
-
-        // TODO Document.
         public <C> C cast(Ilk<C> ilk) {
             if (ilk.key.isAssignableFrom(key)) {
-                return new UncheckedCast<C>().cast(object);
+                return UncheckedCast.<C>cast(object);
             }
             throw new ClassCastException();
         }

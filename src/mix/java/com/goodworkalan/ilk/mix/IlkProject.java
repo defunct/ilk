@@ -9,11 +9,9 @@ public class IlkProject extends ProjectModule {
     public void build(Builder builder) {
         builder
             .cookbook(JavaProject.class)
-                .produces("com.github.bigeasy.ilk/ilk/0.1.0.1")
-                .test()
-                    .depends()
-                        .include("org.testng/testng-jdk15/5.10")
-                        .end()
+                .produces("com.github.bigeasy.ilk/ilk/0.1.0.2")
+                .depends()
+                    .development("org.testng/testng-jdk15/5.10")
                     .end()
                 .end()
             .end();
