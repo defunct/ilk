@@ -9,7 +9,6 @@ import static org.testng.Assert.assertTrue;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -223,22 +222,13 @@ public class IlkTest {
 
     @Test
     public void replacement() {
-        replace(new Ilk<String>() { });
+        Ilk<Map<String, Integer>> map = replace(new Ilk<String>() { });
+        Ilk.Box box = map.box(new HashMap<String, Integer>());
+        box.cast(new Ilk<Map<String, Integer>>() { });
     }
     
-    private <T extends CharSequence & Serializable> void replace(Ilk<T> ilk) {
-        Ilk<Map<T, Integer>> mapKey = new Ilk<Map<T, Integer>>() { };
-//        Ilk<Map<T, Integer>> mapKey = new Ilk<Map<T, Integer>>(ilk.key) { };
-//        Ilk.Box box = mapKey.box(new HashMap<T, Integer>());
-//        Map<String, Integer> map = box.cast(new Ilk<Map<String, Integer>>() { });
-//        assertTrue(map.isEmpty());
-        TypeVariable<?> a = (TypeVariable<?>) ((ParameterizedType) mapKey.key.type).getActualTypeArguments()[0];
-        Method method = (Method) a.getGenericDeclaration();
-        TypeVariable<?> t = (TypeVariable<?>) ((ParameterizedType) method.getGenericParameterTypes()[0]).getActualTypeArguments()[0];
-        for (Type bound : t.getBounds()) {
-            System.out.println(bound);
-        }
-        System.out.println(method.getGenericParameterTypes()[0]);
+    private <T extends CharSequence & Serializable> Ilk<Map<T, Integer>> replace(Ilk<T> ilk) {
+        return new Ilk<Map<T, Integer>>(ilk.key) { };
     }
     
     public static class Foo<T extends Number> {

@@ -17,8 +17,6 @@ class Types {
      * 
      * @param type
      *            The type.
-     * @param parameter
-     *            The type parameter definition in the parent class or null.
      * @return The class of the super type token.
      */
     public static Class<?> getRawClass(Type type) {

@@ -4,6 +4,9 @@ import static com.goodworkalan.ilk.Types.getRawClass;
 
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -12,14 +15,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 
 /**
  * An implementation of type tokens or Gafter's Gadget that generates a
  * navigable model of the parameterized types.
- *  
+ * 
  * @author Alan Gutierrez
- *
- * @param <T> The type to tokenize.
+ * 
+ * @param <T>
+ *            The type to tokenize.
  */
 public class Ilk<T> {
     /** The super type token key. */
@@ -42,7 +48,7 @@ public class Ilk<T> {
      * This method is meant to be called from anonymous subclasses of
      * <code>Ilk</code>.
      */
-    protected Ilk() {
+    protected Ilk(Ilk.Key...keys) {
         // Give me class information.
         Class<?> klass = getClass();
 
@@ -80,7 +86,7 @@ public class Ilk<T> {
         ParameterizedType pt = (ParameterizedType) superClass;  
        
         // We have one type argument in TypeRefence<T>: T.  
-        key = new Ilk.Key(pt.getActualTypeArguments()[0]);  
+        key = new Ilk.Key(pt.getActualTypeArguments()[0], keys);  
     }
 
     /**
@@ -135,10 +141,46 @@ public class Ilk<T> {
          * @param type
          *            The type.
          */
-        public Key(Type type) {
-            this.type = type;
+        public Key(Type type, Key...keys) {
+            this.type = actualize(type, keys);
             this.rawClass = getRawClass(type);
             this.hashCode = makeHashCode(type);
+        }
+        
+        private static Type actualize(Type type, Key...keys) {
+            if (keys.length == 0) {
+                return type; 
+            }
+            return actualize(type, new LinkedList<Key>(Arrays.asList(keys)));
+        }
+        
+        private static Type actualize(Type type, Queue<Key> keys) {
+            if (type instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) type;
+                Type[] arguments = pt.getActualTypeArguments();
+                Type[] actualized = new Type[arguments.length];
+                boolean dirty = false;
+                for (int i = 0, stop = arguments.length; i < stop; i++) {
+                    actualized[i] = actualize(arguments[i], keys);
+                    dirty = dirty || actualized[i] != arguments[i];
+                }
+                if (dirty) {
+                    return new Types.ParameterizedType(pt, actualized);
+                }
+            } else if (type instanceof TypeVariable<?>) {
+                Key parameter = keys.poll();
+                if (parameter == null) {
+                    throw new NoSuchElementException();
+                }
+                TypeVariable<?> variable = (TypeVariable<?>) type;
+                for (Type bound : variable.getBounds()) {
+                    if (!isAssignableFrom(bound, parameter.type)) {
+                        throw new IllegalArgumentException();
+                    }
+                }
+                return parameter.type;
+            }
+            return type;
         }
 
         /**
@@ -180,17 +222,85 @@ public class Ilk<T> {
         public Key getSuperKey(Class<?> keyClass) {
             Type found = find(type, keyClass);
             if (found != null) {
-                if (found instanceof ParameterizedType) {
-                    ParameterizedType pt = (ParameterizedType) found;
-                    Type[] parameters = new Type[keyClass.getTypeParameters().length];
-                    for (int i = 0, stop = parameters.length; i < stop; i++) {
-                        parameters[i] = actualize(type, getRawClass(found).getTypeParameters()[i]);
-                    }
-                    return new Key(new Types.ParameterizedType(pt, parameters));
-                }
-                return new Key(found);
+                return getActualType(found);
             }
             return null;
+        }
+        
+        public Key getActualType(Type found) {
+            if (found instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) found;
+                Type[] parameters = new Type[getRawClass(found).getTypeParameters().length];
+                for (int i = 0, stop = parameters.length; i < stop; i++) {
+                    parameters[i] = actualize(type, getRawClass(found).getTypeParameters()[i]);
+                }
+                return new Key(new Types.ParameterizedType(pt, parameters));
+            }
+            return new Key(found);
+
+        }
+
+        public Key[] getActualTypes(Type[] params) {
+            Key[] keys = new Key[params.length];
+            for (int i = 0, stop = params.length; i < stop; i++) {
+                keys[i] = getActualType(params[i]);
+            }
+            return keys;
+        }
+        
+        public Ilk.Box newInstance(Constructor<?> constructor, Ilk.Box[] arguments)
+        throws InstantiationException, IllegalAccessException, InvocationTargetException { 
+            return new Box(this, constructor.newInstance(objects(constructor.getGenericParameterTypes(), arguments)));
+        }
+        
+        public Ilk.Box invoke(Method method, Ilk.Box object, Ilk.Box[] arguments)
+        throws IllegalAccessException, InvocationTargetException {
+            isAssignableFrom(object.key);
+            return enbox(getActualType(method.getGenericReturnType()), method.invoke(object.object, objects(method.getGenericParameterTypes(), arguments)));
+//            Object result = method.invoke(object.object, objects(method.getGenericParameterTypes(), arguments));
+//            if (result == null) {
+//                return null;
+//            }
+//            return new Ilk.Box(getActualType(method.getGenericReturnType()), result);
+        }
+        
+        public void set(Field field, Ilk.Box object, Ilk.Box value)
+        throws IllegalAccessException {
+            isAssignableFrom(object.key);
+            getActualType(field.getGenericType()).isAssignableFrom(value.key);
+            field.set(object.object, value.object);
+        }
+        
+        Ilk.Box enbox(Key key, Object object) {
+            if (object == null) {
+                return null;
+            }
+            return new Box(key, object);
+        }
+
+        public Ilk.Box get(Field field, Ilk.Box object)
+        throws IllegalAccessException {
+            isAssignableFrom(object.key);
+//            Object result =  field.get(object.object);
+//            if (result == null) {
+//                return null;
+//            }
+//            return new Ilk.Box(getActualType(field.getGenericType()), field.get(object.object));
+            return enbox(getActualType(field.getGenericType()), field.get(object.object));
+        }
+
+        public Object[] objects(Type[] types, Box[] boxes) {
+            Key[] keys = getActualTypes(types);
+            for (int i = 0; i < types.length; i++) {
+                if (boxes[i] != null && !keys[i].isAssignableFrom(boxes[i].key)) {
+                    throw new IllegalArgumentException();
+                }
+            }
+            Object[] objects = new Object[boxes.length];
+            for (int i = 0; i < objects.length; i++) {
+                objects[i] = boxes[i] == null ? null : boxes[i].object;
+            }
+            return objects;
         }
 
         /**
@@ -302,7 +412,7 @@ public class Ilk<T> {
          *            The types to assign from.
          * @return True if the types in from can be assinged to the types in to.
          */
-        private boolean evaluateWildcards(Type[] to, Type[] from) {
+        private static boolean evaluateWildcards(Type[] to, Type[] from) {
             for (int i = 0, stop = to.length; i < stop; i++) {
                 if (!evaluateWildcards(to[i], from[i])) {
                     return false;
@@ -322,7 +432,7 @@ public class Ilk<T> {
          *            The type to assign from.
          * @return True if the types in from can be assinged to the types in to.
          */
-        public boolean evaluateWildcards(Type to, Type from ) {
+        public static boolean evaluateWildcards(Type to, Type from ) {
             if (to instanceof WildcardType && !(from instanceof WildcardType)) {
                 WildcardType toWildcard = (WildcardType) to;
                 for (Type type : toWildcard.getLowerBounds()) {
@@ -350,7 +460,7 @@ public class Ilk<T> {
          *            The type to assign from.
          * @return True if the type from can be assigned to the type to.
          */
-        private boolean isAssignableFrom(Type to, Type from) {
+        private static boolean isAssignableFrom(Type to, Type from) {
             if (getRawClass(to).isAssignableFrom(getRawClass(from))) {
                 if (to instanceof ParameterizedType) {
                     return equals(((ParameterizedType) to).getActualTypeArguments(), ((ParameterizedType) from).getActualTypeArguments());
@@ -404,7 +514,7 @@ public class Ilk<T> {
             }
             return false;
         }
-
+        
         /**
          * Determine if the two arrays are the same length and if each element
          * in the left array is equal to the element at the same index in the
