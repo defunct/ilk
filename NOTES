@@ -1,0 +1,33 @@
+Tue May 18 11:45:51 CDT 2010
+
+    Implementing scopes, it occurs to me that the problem I was having was with
+    the implementation of custom scopes. I don't want to implment them. I'd
+    rather declare custom scopes, then have something that I can store if need
+    be. Singleton is obviously always there, it is the in root scope, then you
+    can have Scopes for each level, these are InjectorScoped. You always look
+    in the local scope. Unscoped classes are never stored. No custom scopes. Who
+    ever is manipulating the Injector can get an object that you can write to
+    file.
+
+Tue May 18 10:10:29 CDT 2010
+
+    Never going to support circular injection. It is dishonest. That is the
+    notion of building an object graph through constructors only, which is not
+    possible, and the solution, a proxy object that is not initialized is
+    dishonest. Someone needs to be responsible. One node adds the other. That
+    way the code block can first create the reference to the other node, then
+    call a setter method to have the node create the reference back, but knowing
+    that the code is created correctly.
+    
+    If you want to do this through an actor, it makes more sense to do this
+    through fields, since you can be certain that there are no side effects,
+    that by setting the edge, the node won't attempt to use the other node which
+    may not have its edge set.
+
+Tue May 18 09:40:03 CDT 2010
+
+    Code for reflection is much smaller without Reflective. In fact, the
+    wrapping Reflective might be a smaller overall dependency, because creating
+    the new annonymous inner classes incurs quite a penalty. Reflective itself
+    is 4K, and each use is going to be 1K, so you'll need to use it six times to
+    reach the 10K that it was.
