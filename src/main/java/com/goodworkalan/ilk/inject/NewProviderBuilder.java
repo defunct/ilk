@@ -1,38 +1,32 @@
 package com.goodworkalan.ilk.inject;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.LinkedList;
+import java.lang.annotation.Annotation;
+
+import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
-import com.goodworkalan.reflective.Reflective;
-import com.goodworkalan.reflective.Reflection;
-import com.goodworkalan.reflective.ReflectiveException;
 
-public class NewProviderBuilder extends NewInstanceBuilder implements Builder {
-    public NewProviderBuilder(Ilk.Key iface, Ilk.Key implementation) {
-        super(iface, implementation);
+public class NewProviderBuilder<I> implements Builder {
+    private final Ilk<? extends Provider<? extends I>> provider;
+
+    private final Ilk<I> type;
+    
+    private final Class<? extends Annotation> qualifier;
+    
+    private final Class<? extends Annotation> scope;
+    
+    public NewProviderBuilder(Ilk<? extends Provider<? extends I>> provider, Ilk<I> type, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        this.provider = provider;
+        this.type = type;
+        this.qualifier = qualifier;
+        this.scope = scope;
     }
 
-    public Ilk.Box instance(LinkedList<QualifiedType> stack, Injector injector) {
-        final Ilk.Box instance = build(stack, injector);
-        try {
-            return new Reflective().reflect(new Reflection<Ilk.Box>() {
-                public Ilk.Box reflect()
-                throws InstantiationException,
-                       IllegalAccessException,
-                       InvocationTargetException,
-                       NoSuchMethodException {
-                    Method method = implementation.rawClass.getMethod("get");
-                    return instance.key.invoke(method, instance);
-                }
-            });
-        } catch (ReflectiveException e) {
-            throw new InjectException(0, e);
-        }
+    public Ilk.Box instance(Injector injector) {
+        return type.box(provider(injector).cast(provider).get());
     }
     
-    public Ilk.Box provider(LinkedList<QualifiedType> stack, Injector injector) {
-        return build(stack, injector);
+    public Ilk.Box provider(Injector injector) {
+        return injector.newInstance(provider.key, qualifier, scope);
     }
 }

@@ -1,28 +1,31 @@
 package com.goodworkalan.ilk.inject;
 
-import java.util.LinkedList;
-
 import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-public class BuilderProvider<T> implements Provider<T> {
-    private final LinkedList<QualifiedType> stack;
-    
-    private final Injector injector;
+/**
+ * A bridge from the <code>Builder</code> interface  {@link Provider Provider&lt;T&gt;}.
+ * <p>
+ * 
+ * @author alan
+ *
+ * @param <T>
+ */
+class BuilderProvider<T> implements Provider<T> {
+    private final Ilk<T> ilk;
     
     private final Builder builder;
     
-    private final Ilk<T> ilk;
+    private final Injector injector;
     
-    public BuilderProvider(Ilk<T> ilk, LinkedList<QualifiedType> stack, Builder builder, Injector injector) {
-        this.stack = stack;
+    public BuilderProvider(Ilk<T> ilk, Builder builder, Injector injector) {
         this.injector = injector;
         this.builder = builder;
         this.ilk = ilk;
     }
     
     public T get() {
-        return builder.instance(stack, injector).cast(ilk);
+        return builder.instance(injector).cast(ilk);
     }
 }

@@ -1,7 +1,5 @@
 package com.goodworkalan.ilk.inject;
 
-import java.util.LinkedList;
-
 import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
@@ -32,11 +30,11 @@ class InstanceProvider<T> implements Builder {
         this.instance = instance;
     }
     
-    public Ilk.Box instance(LinkedList<QualifiedType> stack, Injector injector) {
+    public Ilk.Box instance(Injector injector) {
         return ilk.box(instance);
     }
     
-    public Box provider(LinkedList<QualifiedType> stack, Injector injector) {
+    public Box provider(Injector injector) {
         return Injector.provider(ilk).box(new Provider<T>() {
             public T get() {
                 return instance;

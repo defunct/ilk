@@ -22,7 +22,7 @@ public class InjectorTest {
             }
         });
         Injector injector = newInjector.newInjector();
-        Vehicle vehicle = injector.create(new Ilk<Vehicle>(Vehicle.class), null);
+        Vehicle vehicle = injector.instance(new Ilk<Vehicle>(Vehicle.class), null);
         assertTrue(vehicle instanceof Car);
         assertNotNull(((Car) vehicle).driverSeat);
     }
