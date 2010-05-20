@@ -27,6 +27,9 @@ class ProviderVendor<I> implements Vendor {
     }
     
     public Ilk.Box provider(Injector injector) {
-        return injector.newInstance(provider.key, qualifier, scope);
+        injector.startInjection();
+        Ilk.Box box = injector.newInstance(provider.key, qualifier, scope);
+        injector.endInjection();
+        return box;
     }
 }

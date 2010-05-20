@@ -21,6 +21,9 @@ class ImplementationVendor extends VendorProviderVendor {
     }
 
     public Ilk.Box instance(Injector injector) {
-        return injector.newInstance(implementation, qualifier, scope);
+        injector.startInjection();
+        Ilk.Box box = injector.newInstance(implementation, qualifier, scope);
+        injector.endInjection();
+        return box;
     }
  }

@@ -53,19 +53,25 @@ abstract class VendorProviderVendor implements Vendor {
                        InvocationTargetException,
                        NoSuchMethodException {
                     Ilk.Box boxedIlk;
-                    Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(){};
                     Type provided = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
                     if (provided instanceof ParameterizedType) {
+                        Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((ParameterizedType) provided)){};
                         Ilk.Box type = new Ilk<ParameterizedType>(ParameterizedType.class).box((ParameterizedType) provided);
                         Constructor<?> newIlk = Ilk.class.getConstructor(ParameterizedType.class);
-                        boxedIlk = ilkIlk.key.newInstance(newIlk, type);
+                        boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, type);
                     } else {
                         Ilk.Box boxedClass = new Ilk.Box((Class<?>) provided);
+                        Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((Class<?>) provided)){};
                         Constructor<?> newIlk = Ilk.class.getConstructor(Class.class);
-                        boxedIlk = ilkIlk.key.newInstance(newIlk, boxedClass);
+                        boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, boxedClass);
                     }
                     Constructor<?> newBuilderProvider = provider.rawClass.getConstructor(Ilk.class, Vendor.class, Injector.class);
-                    return provider.newInstance(newBuilderProvider, boxedIlk, boxedBuilder, boxedInjector);
+                    return provider.newInstance(new Ilk.Reflect() {
+                        public Object newInstance(Constructor<?> constructor, Object[] arguments)
+                        throws InstantiationException, IllegalAccessException, InvocationTargetException {
+                            return constructor.newInstance(arguments);
+                        }
+                    }, newBuilderProvider, boxedIlk, boxedBuilder, boxedInjector);
                 }
             });
         } catch (ReflectiveException e) {

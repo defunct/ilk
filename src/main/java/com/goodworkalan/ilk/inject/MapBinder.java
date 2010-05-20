@@ -28,7 +28,7 @@ public class MapBinder<K, I> {
     }
     
     public void instance(K key, I instance) {
-        builders.put(key, new InstanceProvider<I>(ilk, instance));
+        builders.put(key, new InstanceVendor<I>(ilk, instance));
     }
     
     public void implementation(K key, Ilk<? extends I> implementation, Class<? extends Annotation> scope) {

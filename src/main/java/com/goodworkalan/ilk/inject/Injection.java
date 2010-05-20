@@ -2,8 +2,8 @@ package com.goodworkalan.ilk.inject;
 
 import java.lang.annotation.Annotation;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
+import java.util.Set;
 
 import com.goodworkalan.ilk.Ilk;
 
@@ -13,7 +13,7 @@ import com.goodworkalan.ilk.Ilk;
  * @author Alan Gutierrez
  */
 class Injection {
-    public final LinkedList<QualifiedType> stack = new LinkedList<QualifiedType>();
+    public int injectionDepth;
     
     public int lockHeight;
 
@@ -23,4 +23,10 @@ class Injection {
     * threads.
     */
    public final Map<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> scopes = new HashMap<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>>();
+   
+   public Injection(Set<Class<? extends Annotation>> scopes) {
+       for (Class<? extends Annotation> scope : scopes) {
+           this.scopes.put(scope, new HashMap<QualifiedType, Ilk.Box>());
+       }
+   }
 }

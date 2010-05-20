@@ -28,7 +28,7 @@ public class ListBinder<I> {
     }
     
     public void instance(I instance) {
-        builders.add(new InstanceProvider<I>(type, instance));
+        builders.add(new InstanceVendor<I>(type, instance));
     }
     
     public void implementation(Ilk<? extends I> implementation, Class<? extends Annotation> scope) {

@@ -9,7 +9,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,29 +44,16 @@ public class Injector {
     
     /** The write lock on all scope containers in this injector. */  
     private final Lock scopeLock = new ReentrantLock();
-
-    /**
-     * The temporary scope where instances are kept while they are being
-     * constructed so that partially injected instances are not visible to other
-     * threads.
-     */
-    private final Map<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> temporaryScopes = new HashMap<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>>();
   
     /** The map of scope annotations to concurrent maps of qualified types to boxes. */
     private final Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes;
 
     /** The thread based stack of injection invocations. */
-    private final ThreadLocal<LinkedList<Injection>> INJECTIONS = new ThreadLocal<LinkedList<Injection>>() {
-        public LinkedList<Injection> initialValue() {
-            return new LinkedList<Injection>();
+    private final ThreadLocal<Injection> INJECTION = new ThreadLocal<Injection>() {
+        public Injection initialValue() {
+            return new Injection(scopes.keySet());
         }
     };
-
-    /**
-     * The number of injectors including ancestors and self whose locks are held
-     * by this injector instance.
-     */
-    private int lockHeight;
 
     /**
      * Create an injector with the given parent the given builders and the given
@@ -91,15 +77,8 @@ public class Injector {
         }
         for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> entry : scopes.entrySet()) {
             this.scopes.put(entry.getKey(), new ConcurrentHashMap<QualifiedType, Ilk.Box>(entry.getValue()));
-            this.temporaryScopes.put(entry.getKey(), new HashMap<QualifiedType, Ilk.Box>());
         }
         this.parent = parent;
-    }
-    
-    Injector(Injector injector) {
-        this.builders = injector.builders;
-        this.scopes = injector.scopes;
-        this.parent = injector.parent;
     }
     
     public InjectorBuilder newInjector() {
@@ -135,14 +114,36 @@ public class Injector {
     }
     
     Ilk.Box provider(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        return getBuilder(key, annotationClass).provider(new Injector(this));
+        return getBuilder(key, annotationClass).provider(this);
+    }
+    
+    void startInjection() {
+        INJECTION.get().injectionDepth++;
+    }
+
+    /** FIXME Perfect example of no need to test twice, null injector. */
+    void endInjection() {
+        Injection injection = INJECTION.get();
+        if (--injection.injectionDepth == 0) {
+            for (Map.Entry<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> entry : injection.scopes.entrySet()) {
+                Class<? extends Annotation> scope = entry.getKey();
+                Injector injector = this;
+                while (!injector.scopes.containsKey(scope)) {
+                    injector = injector.parent;
+                }
+                injector.scopes.get(scope).putAll(entry.getValue());
+            }
+            Injector injector = this;
+            for (int i = 0; i < injection.lockHeight; i++) {
+                injector.scopeLock.unlock();
+                injector = injector.parent;
+            }
+            INJECTION.remove();
+        }
     }
     
     Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        Injector injector = new Injector(this);
-        Ilk.Box box = getBuilder(key, annotationClass).instance(injector);
-        injector.unlockScopes();
-        return box;
+        return getBuilder(key, annotationClass).instance(this);
     }
 
     private Vendor getBuilder(Ilk.Key key, Class<? extends Annotation> qualifier) {
@@ -191,7 +192,7 @@ public class Injector {
                 try {
                     arguments[i] = new Reflective().reflect(new Reflection<Ilk.Box>() {
                         public Ilk.Box reflect() throws IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
-                            return key.newInstance(Boxed.class.getConstructor(Ilk.Box.class), box );
+                            return key.newInstance(new Ilk.Reflect(), Boxed.class.getConstructor(Ilk.Box.class), box );
                         }
                     });
                 } catch (ReflectiveException e) {
@@ -205,7 +206,8 @@ public class Injector {
     }
 
     private Ilk.Box getBoxOrLockScope(Class<? extends Annotation> scope, QualifiedType qt) {
-        Ilk.Box box = temporaryScopes.get(scope).get(qt);
+        Injection injection = INJECTION.get();
+        Ilk.Box box = injection.scopes.get(scope).get(qt);
         if (box == null) {
             Injector injector = this;
             while (injector != null && !injector.scopes.containsKey(scope)) {
@@ -219,9 +221,9 @@ public class Injector {
                 int lockCount = 1;
                 injector = this;
                 while (injector != null && !injector.scopes.containsKey(scope)) {
-                    if (lockHeight < lockCount) {
+                    if (injection.lockHeight < lockCount) {
                         injector.scopeLock.lock();
-                        lockHeight++;
+                        injection.lockHeight++;
                     }
                     lockCount++;
                     injector = injector.parent;
@@ -231,25 +233,7 @@ public class Injector {
         return box;
     }
 
-    /** FIXME Perfect example of no need to test twice, null injector. */
-    void unlockScopes() {
-        for (Map.Entry<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> entry : temporaryScopes.entrySet()) {
-            Class<? extends Annotation> scope = entry.getKey();
-            Injector injector = this;
-            while (!injector.scopes.containsKey(scope)) {
-                injector = injector.parent;
-            }
-            injector.scopes.get(scope).putAll(entry.getValue());
-            entry.getValue().clear();
-        }
-        Injector injector = this;
-        for (int i = 0; i < lockHeight; i++) {
-            injector.scopeLock.unlock();
-            injector = injector.parent;
-        }
-        lockHeight = 0;
-    }
-    
+   
     Ilk.Box newInstance(Ilk.Key ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         if (scope.equals(NoScope.class)) {
             return newInstance(ilk);
@@ -258,7 +242,7 @@ public class Injector {
         Ilk.Box box = getBoxOrLockScope(scope, qt);
         if (box == null) {
             box = newInstance(ilk);
-            temporaryScopes.get(scope).put(qt, box);
+            INJECTION.get().scopes.get(scope).put(qt, box);
         }
         return box;
     }
@@ -292,7 +276,7 @@ public class Injector {
             instance = new Reflective().reflect(new Reflection<Ilk.Box>() {
                 public Ilk.Box reflect()
                 throws InstantiationException, IllegalAccessException, InvocationTargetException {
-                    return type.newInstance(constructor, arguments);
+                    return type.newInstance(new Ilk.Reflect(), constructor, arguments);
                 }
             });
         } catch (ReflectiveException e) {

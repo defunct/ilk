@@ -277,7 +277,7 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      */
     public <T> void instance(T instance, Ilk<T> type, Class<? extends Annotation> qualifier) {
-        bind(new InstanceProvider<T>(type, instance), type, qualifier);
+        bind(new InstanceVendor<T>(type, instance), type, qualifier);
     }
 
     /**
