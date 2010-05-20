@@ -3,14 +3,19 @@ package com.goodworkalan.ilk.inject;
 import com.goodworkalan.ilk.Ilk;
 
 /**
- * Builds an instance of an object or of an object provider. This is an internal
- * implementation in, lieu of using {@link javax.inject.Provider
- * Provider&lt;T&gt;} that creates {@link Ilk.Box} instances that contain a
- * pairing of the object with actual type information.
+ * Supplies an instance of an object or a <code>Provider&lt;T&gt;</code>.
+ * <p>
+ * This internal interface is used in lieu of using
+ * {@link javax.inject.Provider Provider&lt;T&gt;} directly. Instead of
+ * providing object instances directly, the <code>Vendor</code> interface
+ * encapsulates objects in type-safe {@link Ilk.Box} containers. The
+ * <code>Ilk.Box</code> will preserve the actual type information for generic
+ * types, so that generic objects can be checked for assignability before they
+ * are returned by the injector or injected.
  * 
  * @author Alan Gutierrez
  */
-interface Builder {
+interface Vendor {
     /**
      * Supply an instance of an object using the given injector to obtain an
      * injected parameters.

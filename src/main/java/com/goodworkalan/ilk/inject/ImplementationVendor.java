@@ -4,15 +4,20 @@ import java.lang.annotation.Annotation;
 
 import com.goodworkalan.ilk.Ilk;
 
-public class NewImplementationBuilder extends MissingProviderBuilder {
+class ImplementationVendor extends VendorProviderVendor {
+    /** The type qualifier annotation. */
     private final Class<? extends Annotation> qualifier;
 
+    /** The scope annotation. */
     private final Class<? extends Annotation> scope;
     
-    public NewImplementationBuilder(Ilk.Key providerKey, Ilk.Key iface, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(providerKey, implementation);
+    private final Ilk.Key implementation;
+    
+    public ImplementationVendor(Ilk.Key provider, Ilk.Key iface, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        super(provider);
         this.qualifier = qualifier;
         this.scope = scope;
+        this.implementation = implementation;
     }
 
     public Ilk.Box instance(Injector injector) {

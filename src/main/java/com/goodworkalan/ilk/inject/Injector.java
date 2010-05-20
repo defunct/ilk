@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,7 +41,7 @@ public class Injector {
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Builder>> builders;
+    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders;
     
     /** The write lock on all scope containers in this injector. */  
     private final Lock scopeLock = new ReentrantLock();
@@ -52,7 +53,15 @@ public class Injector {
      */
     private final Map<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> temporaryScopes = new HashMap<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>>();
   
+    /** The map of scope annotations to concurrent maps of qualified types to boxes. */
     private final Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes;
+
+    /** The thread based stack of injection invocations. */
+    private final ThreadLocal<LinkedList<Injection>> INJECTIONS = new ThreadLocal<LinkedList<Injection>>() {
+        public LinkedList<Injection> initialValue() {
+            return new LinkedList<Injection>();
+        }
+    };
 
     /**
      * The number of injectors including ancestors and self whose locks are held
@@ -71,14 +80,14 @@ public class Injector {
      * @param scopes
      *            The scopes collection.
      */
-    Injector(Injector parent, Map<Class<? extends Annotation>, IlkAssociation<Builder>> builders, Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes) {
-        this.builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Builder>>();
+    Injector(Injector parent, Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders, Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes) {
+        this.builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor>>();
         this.scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>>();
         if (parent == null && !scopes.containsKey(Singleton.class)) {
             scopes.put(Singleton.class, new ConcurrentHashMap<QualifiedType, Ilk.Box>());
         }
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Builder>> entry : builders.entrySet()) {
-            this.builders.put(entry.getKey(), new IlkAssociation<Builder>(entry.getValue()));
+        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor>> entry : builders.entrySet()) {
+            this.builders.put(entry.getKey(), new IlkAssociation<Vendor>(entry.getValue()));
         }
         for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> entry : scopes.entrySet()) {
             this.scopes.put(entry.getKey(), new ConcurrentHashMap<QualifiedType, Ilk.Box>(entry.getValue()));
@@ -136,16 +145,16 @@ public class Injector {
         return box;
     }
 
-    private Builder getBuilder(Ilk.Key key, Class<? extends Annotation> qualifier) {
+    private Vendor getBuilder(Ilk.Key key, Class<? extends Annotation> qualifier) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
-        IlkAssociation<Builder> stipulationByIlk = builders.get(qualifier);
-        Builder builder = stipulationByIlk.get(key);
+        IlkAssociation<Vendor> stipulationByIlk = builders.get(qualifier);
+        Vendor builder = stipulationByIlk.get(key);
         if (builder == null) {
             if (qualifier.equals(NoQualifier.class)) {
-                Ilk.Key providerKey = new Ilk<BuilderProvider<?>>(key) { }.key;
-                builder = new NewImplementationBuilder(providerKey, key, key, qualifier, NoScope.class);
+                Ilk.Key providerKey = new Ilk<VendorProvider<?>>(key) { }.key;
+                builder = new ImplementationVendor(providerKey, key, key, qualifier, NoScope.class);
                 stipulationByIlk.cache(key, Collections.singletonList(builder));
             } else {
                 return getBuilder(key, NoQualifier.class);

@@ -8,7 +8,7 @@ import com.goodworkalan.danger.CodedDanger;
 
 /**
  * A general purpose exception that indicates that an error occurred in one 
- * of the classes in the addendum package.
+ * of the classes in the inject package.
  *   
  * @author Alan Gutierrez
  */
@@ -26,7 +26,7 @@ extends CodedDanger {
     public final static int INVOCATION_TARGET = 204;
 
     /**
-     * Create a Sheaf exception with the given error code.
+     * Create an <code>InjectException</code> with the given error <code>code</code>.
      * 
      * @param code
      *            The error code.
@@ -38,8 +38,8 @@ extends CodedDanger {
     }
 
     /**
-     * Wrap the given cause exception in an addendum exception with the given
-     * error code.
+     * Wrap the given cause exception in an <code>InjectException</code> with
+     * the given error code.
      * 
      * @param code
      *            The error code.

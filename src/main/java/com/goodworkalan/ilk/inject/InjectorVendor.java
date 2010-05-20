@@ -4,7 +4,7 @@ import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-class SubInjectorBuilder implements Builder {
+class InjectorVendor implements Vendor {
     public Ilk.Box instance(Injector injector) {
         return new Ilk<Injector>(Injector.class).box(new Injector(injector));
     }

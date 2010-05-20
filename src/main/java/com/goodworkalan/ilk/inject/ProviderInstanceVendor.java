@@ -4,12 +4,12 @@ import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-class ProviderBuilder<I> implements Builder {
+class ProviderInstanceVendor<I> implements Vendor {
     private final Ilk<I> ilk;
 
     private final Provider<? extends I> provider;
     
-    public ProviderBuilder(Ilk<I> ilk, Provider<? extends I> provider) {
+    public ProviderInstanceVendor(Ilk<I> ilk, Provider<? extends I> provider) {
         this.ilk = ilk;
         this.provider = provider;
     }

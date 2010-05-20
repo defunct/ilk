@@ -11,7 +11,7 @@ import com.goodworkalan.ilk.Ilk;
  *
  * @author Alan Gutierrez
  */
-public class QualifiedType implements Serializable {
+class QualifiedType implements Serializable {
     /** The serial version id. */
     private static final long serialVersionUID = 1L;
 

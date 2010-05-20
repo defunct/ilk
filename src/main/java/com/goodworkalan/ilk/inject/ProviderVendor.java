@@ -6,7 +6,7 @@ import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-public class NewProviderBuilder<I> implements Builder {
+class ProviderVendor<I> implements Vendor {
     private final Ilk<? extends Provider<? extends I>> provider;
 
     private final Ilk<I> type;
@@ -15,7 +15,7 @@ public class NewProviderBuilder<I> implements Builder {
     
     private final Class<? extends Annotation> scope;
     
-    public NewProviderBuilder(Ilk<? extends Provider<? extends I>> provider, Ilk<I> type, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+    public ProviderVendor(Ilk<? extends Provider<? extends I>> provider, Ilk<I> type, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         this.provider = provider;
         this.type = type;
         this.qualifier = qualifier;

@@ -41,7 +41,7 @@ public class InjectorBuilder {
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Builder>> builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Builder>>();
+    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor>>();
     
     /** The scopes to create in the injector. */
     private final Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>>();
@@ -75,7 +75,7 @@ public class InjectorBuilder {
      */
     InjectorBuilder(Injector parent) {
         this.parent = parent;
-        bind(new SubInjectorBuilder(), ilk(Injector.class), null);
+        bind(new InjectorVendor(), ilk(Injector.class), null);
         scope(InjectorScoped.class);
     }
 
@@ -116,10 +116,10 @@ public class InjectorBuilder {
      *            The injector builder to copy.
      */
     public void consume(InjectorBuilder newInjector) {
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Builder>> entry : newInjector.builders.entrySet()) {
-            IlkAssociation<Builder> associations = this.builders.get(entry.getKey());
+        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor>> entry : newInjector.builders.entrySet()) {
+            IlkAssociation<Vendor> associations = this.builders.get(entry.getKey());
             if (associations == null) {
-                associations = new IlkAssociation<Builder>(false);
+                associations = new IlkAssociation<Vendor>(false);
                 this.builders.put(entry.getKey(), associations);
             }
             associations.addAll(entry.getValue());
@@ -178,13 +178,13 @@ public class InjectorBuilder {
         return qualifier;
     }
 
-    final <I> void bind(Builder builder, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
+    final <I> void bind(Vendor builder, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
-        IlkAssociation<Builder> builderByIlk = builders.get(qualifier);
+        IlkAssociation<Vendor> builderByIlk = builders.get(qualifier);
         if (builderByIlk == null) {
-            builderByIlk = new IlkAssociation<Builder>(false);
+            builderByIlk = new IlkAssociation<Vendor>(false);
             builders.put(qualifier, builderByIlk);
         }
         builderByIlk.assignable(ilk.key, builder);
@@ -212,7 +212,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> void implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new NewImplementationBuilder(new Ilk<BuilderProvider<I>>(implementation.key) {}.key, ilk.key, implementation.key, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
+        bind(new ImplementationVendor(new Ilk<VendorProvider<I>>(ilk.key) {}.key, ilk.key, implementation.key, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
     }
 
     /**
@@ -235,7 +235,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> void provider(Provider<? extends I> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new ProviderBuilder<I>(ilk, provider), ilk, qualifier);
+        bind(new ProviderInstanceVendor<I>(ilk, provider), ilk, qualifier);
     }
 
     /**
@@ -258,7 +258,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> void provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new NewProviderBuilder<I>(provider, ilk, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
+        bind(new ProviderVendor<I>(provider, ilk, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
     }
 
     /**
@@ -302,8 +302,8 @@ public class InjectorBuilder {
      *         list.
      */
     public <I> ListBinder<I> list(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        List<Builder> builders = new ArrayList<Builder>();
-        bind(new ListBuilder<I>(builders, ilk), ilk, qualifier);
+        List<Vendor> builders = new ArrayList<Vendor>();
+        bind(new ListVendor<I>(builders, ilk), ilk, qualifier);
         return new ListBinder<I>(ilk, builders);
     }
 
@@ -332,8 +332,8 @@ public class InjectorBuilder {
      *         map.
      */
     public <K, I> MapBinder<K, I> map(Ilk<K> keyIlk, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        Map<K, Builder> builders = new LinkedHashMap<K, Builder>();
-        bind(new MapBuilder<K, I>(builders, keyIlk, ilk), ilk, qualifier);
+        Map<K, Vendor> builders = new LinkedHashMap<K, Vendor>();
+        bind(new MapVendor<K, I>(builders, keyIlk, ilk), ilk, qualifier);
         return new MapBinder<K, I>(ilk, builders);
     }
 

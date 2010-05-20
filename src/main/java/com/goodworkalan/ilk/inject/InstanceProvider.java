@@ -13,7 +13,7 @@ import com.goodworkalan.ilk.Ilk.Box;
  * @param <T>
  *            The type.
  */
-class InstanceProvider<T> implements Builder {
+class InstanceProvider<T> implements Vendor {
     /** The instance. */
     private final T instance;
 
