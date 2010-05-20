@@ -10,8 +10,6 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,6 +22,11 @@ import java.util.TreeSet;
 
 import org.testng.annotations.Test;
 
+/**
+ * Unit tests for the {@link Ilk} class.
+ *
+ * @author Alan Gutierrez
+ */
 public class IlkTest {
     /** Test the class constructor. */
     @Test
@@ -105,10 +108,14 @@ public class IlkTest {
         assertEquals(ilk.key.getSuperKey(Serializable.class).toString(), "java.io.Serializable");
         assertEquals(ilk.key.getSuperKey(Object.class).toString(), "java.lang.Object");
         assertEquals(ilk.key.getSuperKey(TreeMap.class).toString(), "java.util.TreeMap<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
-        assertNull(ilk.key.getSuperKey(Number.class));
-        assertNull(ilk.key.getSuperKey(CharSequence.class));
         Ilk.Key collectable = new Ilk<Collectable>() { }.key;
         assertEquals(collectable.getSuperKey(Collection.class).toString(), "java.util.Collection<java.lang.Integer>");
+    }
+    
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void badSuperKey() {
+        Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
+        assertNull(ilk.key.getSuperKey(Number.class));
     }
 
     /** Test is assignable from. */
@@ -220,52 +227,39 @@ public class IlkTest {
         box.cast(Integer.class);
     }
 
+    /** Test type variable replacement. */
     @Test
     public void replacement() {
         Ilk<Map<String, Integer>> map = replace(new Ilk<String>() { });
         Ilk.Box box = map.box(new HashMap<String, Integer>());
         box.cast(new Ilk<Map<String, Integer>>() { });
     }
-    
+
+    /** Test variables with bounds. */
     private <T extends CharSequence & Serializable> Ilk<Map<T, Integer>> replace(Ilk<T> ilk) {
         return new Ilk<Map<T, Integer>>(ilk.key) { };
     }
     
-    public static class Foo<T extends Number> {
+    /** Test key replacement. */
+    @Test
+    public void keyReplace() {
+        Ilk.Key string = new Ilk<String>() {}.key;
+        Ilk.Key bar = new Ilk<Bar<?>>() { }.key;
+        new Ilk.Key((ParameterizedType) bar.type, string);
     }
     
-    @Test(enabled = false)
-    public void foo() {
-        // FIXME Uh, oh. More to play with.
-        TypeVariable<?> tv = Foo.class.getTypeParameters()[0];
-        for (Type bound : tv.getBounds()) {
-            System.out.println(bound);
-        }
-        System.out.println(tv);
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void badKeyReplace() {
+        Ilk.Key integer = new Ilk<Integer>() {}.key;
+        Ilk.Key bar = new Ilk<Bar<?>>() { }.key;
+        new Ilk.Key((ParameterizedType) bar.type, integer);
     }
     
-    // Here was an example of a possible use of variable substitution, finding a constructor
-    // that would convert form one type to the next.
-//    @Test(enabled = false)
-//    public void lookups() throws Exception {
-//        assertTrue(lookup(new Ilk<One<String>>() { }, new Ilk<Two<String>>() { }, new One<String>()));
-//        assertTrue(lookup(new Ilk<Collection<String>>() {}, new Ilk<TreeSet<String>>() {}, new ArrayList<String>()));
-//    }
-//    
-//    private <F, T> boolean lookup(Ilk<F> from, Ilk<T> to, F object) throws Exception {
-//        for (Constructor<T> constructor : to.getConstructors()) {
-//            if (constructor.getGenericParameterTypes().length == 1) {
-//                Ilk.Key key;
-//                try {
-//                    key = null; //new Ilk.Key(to.key, constructor.getGenericParameterTypes()[0]);
-//                } catch (IllegalArgumentException e) {
-//                    continue;
-//                }
-//                if (key.isAssignableFrom(from.key)) {
-//                    return true;
-//                }
-//            }
-//        }
-//        return false;
-//    }
+    @Test
+    public void classBox() {
+        Ilk<Class<Integer>> classIlk = new Ilk<Class<Integer>>() { };
+        Ilk.Box classBox = new Ilk.Box(new Integer(0).getClass());
+        Class<Integer> intClass = classBox.cast(classIlk);
+        assertEquals(intClass, Integer.class);
+    }
 }

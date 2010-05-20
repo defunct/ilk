@@ -58,6 +58,12 @@ class Types {
             this.actualTypeArguments = actualTypeArguments;
         }
 
+        public ParameterizedType(Class<?> rawType, Type[] actualTypeArguments) {
+            this.ownerType = null;
+            this.rawType = rawType;
+            this.actualTypeArguments = actualTypeArguments;
+        }
+
         /**
          * Get an array of <tt>Type</tt> objects representing the actual type
          * arguments to this type.
@@ -99,15 +105,50 @@ class Types {
             string.append(((Class<?>) rawType).getName()).append("<");
             String separator = "";
             for (Type type : actualTypeArguments) {
-                string.append(separator);
-                if (type instanceof Class<?>) {
-                    string.append(((Class<?>) type).getName());
-                } else {
-                    string.append(type);
-                }
+                string.append(separator).append(typeToString(type));
                 separator = ", ";
             }
             string.append(">");
+            return string.toString();
+        }
+    }
+    
+    static String typeToString(Type type) {
+        if (type instanceof Class<?>) {
+            return ((Class<?>) type).getName();
+        }
+        return type.toString();
+    }
+    
+    public static class WildcardType implements java.lang.reflect.WildcardType {
+        private final Type[] lowerBounds;
+
+        private final Type[] upperBounds;
+        
+        public WildcardType(Type[] lowerBounds, Type[] upperBounds) {
+            this.lowerBounds = lowerBounds;
+            this.upperBounds = upperBounds;
+        }
+        public Type[] getLowerBounds() {
+            return lowerBounds;
+        }
+        
+        public Type[] getUpperBounds() {
+            return upperBounds;
+        }
+        
+        public String toString() {
+            StringBuffer string = new StringBuffer();
+            if (lowerBounds.length != 0) { 
+                string.append("? super ").append(lowerBounds[0]);
+            } else {
+                string.append("? extends ");
+                String separator = "";
+                for (Type upper : upperBounds) {
+                    string.append(separator).append(typeToString(upper));
+                    separator = " & ";
+                }
+            }
             return string.toString();
         }
     }
