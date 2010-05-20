@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.inject.Provider;
+import javax.inject.Scope;
 import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
@@ -71,8 +72,8 @@ public class InjectorBuilder {
      */
     InjectorBuilder(Injector parent) {
         this.parent = parent;
-        bind(new InjectorVendor());
         scope(InjectorScoped.class);
+        builders.put(NoQualifier.class, new IlkAssociation<Vendor<?>>(false));
     }
 
     /**
@@ -226,8 +227,8 @@ public class InjectorBuilder {
      * @param qualifier
      *            The qualifier or null for unqualified.
      */
-    public <T> void instance(T instance, Ilk<T> type, Class<? extends Annotation> qualifier) {
-        bind(new InstanceVendor<T>(type, instance, qualifier));
+    public <I> Vendor<I> instance(I instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
+        return bind(new InstanceVendor<I>(type, instance, qualifier));
     }
 
     /**
@@ -310,7 +311,9 @@ public class InjectorBuilder {
      *            The opaque collection of scope values.
      */
     public void scope(Class<? extends Annotation> scope, Ilk.Box values) {
-        Vendor.checkScope(scope);
+        if (scope == null || scope.getAnnotation(Scope.class) == null) {
+            throw new IllegalArgumentException();
+        }
         scopes.put(scope, values == null ? new ConcurrentHashMap<List<Object>, Ilk.Box>() : values.cast(Injector.SCOPE_TYPE));
     }
 

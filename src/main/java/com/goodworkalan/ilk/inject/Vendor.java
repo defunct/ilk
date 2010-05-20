@@ -4,7 +4,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 
@@ -33,58 +32,40 @@ public abstract class Vendor<I> {
 
     /**
      * Create a vendor with the given super type token.
+     * <p>
+     * Checks that the given annotation is a scope annotation, or if it is null
+     * convert it into a hidden no-scope annotation.
+     * <p>
+     * Check that the given annotation is a qualifier annotation, or if it is
+     * null convert it into a hidden no-qualifier annotation.
      */
     protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        if (qualifier == null) {
+            qualifier = NoQualifier.class;
+        }
+        if (!qualifier.equals(NoQualifier.class) && qualifier.getAnnotation(Qualifier.class) == null) {
+            throw new IllegalArgumentException();
+        }
+        if (scope == null) {
+            scope = NoScope.class;
+        }
+        if (scope.equals(NoScope.class)) {
+            for (Annotation annotation : ilk.key.rawClass.getAnnotations()) {
+                if (annotation.annotationType().getAnnotation(Scope.class) != null) {
+                    scope = annotation.annotationType();
+                    break;
+                }
+            }
+        } else if (scope.getAnnotation(Scope.class) == null) {
+            throw new IllegalArgumentException();
+        }
         this.ilk = ilk;
-        this.qualifier = checkQualifier(qualifier);
-        this.scope = checkScope(scope);
+        this.qualifier = qualifier;
+        this.scope = scope;
     }
     
     protected abstract Ilk.Box get(Injector injector);
     
-    /**
-     * Check that the given annotation is a scope annotation, or if it is null
-     * convert it into a hidden no-scope annotation.
-     * 
-     * @param scope
-     *            The scope annotation.
-     * @return The given annotation or a hidden no scope annotation if it is
-     *         null.
-     * @exception IllegalArgumentException
-     *                If the given annotation is not annotated with the
-     *                scope annotation.
-     */
-    static Class<? extends Annotation> checkScope(Class<? extends Annotation> scope) {
-        if (scope == null) {
-            return NoScope.class;
-        }
-        if (scope.getAnnotation(Scope.class) == null) {
-            throw new IllegalArgumentException();
-        }
-        return scope;
-    }
-
-    /**
-     * Check that the given annotation is a qualifier annotation, or if it is
-     * null convert it into a hidden no-qualifier annotation.
-     * 
-     * @param qualifier
-     *            The qualifier annotation.
-     * @return The given annotation or a hidden no qualifier annotation if it is
-     *         null.
-     * @exception IllegalArgumentException
-     *                If the given annotation is not annotated with the
-     *                qualifier annotation.
-     */
-    static Class<? extends Annotation> checkQualifier(Class<? extends Annotation> qualifier) {
-        if (qualifier == null) {
-            return NoQualifier.class;
-        }
-        if (qualifier.getAnnotation(Qualifier.class) == null) {
-            throw new IllegalArgumentException();
-        }
-        return qualifier;
-    }
     /**
      * Supply an instance of an object using the given injector to obtain an
      * injected parameters.
@@ -125,9 +106,9 @@ public abstract class Vendor<I> {
      * with their actual type information.
      */
     Ilk.Box provider(Injector injector) {
-        Ilk.Key provider = new Ilk<Provider<I>>() { }.key;
+        Ilk.Key provider = new Ilk<VendorProvider<I>>(ilk.key) { }.key;
         Type type = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
-        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.box(this);
+        Ilk.Box boxedVendor = new Ilk<Vendor<I>>(ilk.key) {}.box(this);
         Ilk.Box boxedInjector = new Ilk<Injector>(Injector.class).box(injector);
         return Injector.needsIlkConstructor(provider, type, boxedVendor, boxedInjector);
     }

@@ -12,6 +12,10 @@ class ImplementationVendor<I> extends Vendor<I> {
         super(ilk, qualifier, scope);
         this.implementation = implementation;
     }
+    
+    public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation) {
+        this(ilk, implementation, null, null);
+    }
 
     @Override
     protected Box get(Injector injector) {

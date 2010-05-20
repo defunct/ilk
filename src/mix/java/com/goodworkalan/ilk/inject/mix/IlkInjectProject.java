@@ -22,7 +22,6 @@ public class IlkInjectProject implements ProjectModule {
                 .produces("com.github.bigeasy.ilk/ilk-inject/0.1")
                 .depends()
                     .production("com.github.bigeasy.ilk/ilk-association/0.+1")
-                    .production("com.github.bigeasy.danger/danger/0.+1")
                     .production("com.github.bigeasy.reflective/reflective/0.+1")
                     .production("javax.inject/inject/+1")
                     .development("org.testng/testng-jdk15/5.10")

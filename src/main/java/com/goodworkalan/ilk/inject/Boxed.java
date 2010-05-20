@@ -3,9 +3,10 @@ package com.goodworkalan.ilk.inject;
 import com.goodworkalan.ilk.Ilk;
 
 /**
- * Used by objects to request injection of the {@link Ilk.Box} that contains the
- * a desired in injected object. The <code>Boxed&lt;T&gt;</code> class is used
- * by the injector to determine the type of boxed object to inject.
+ * Used by objects to request injection of the
+ * {@link com.goodworkalan.ilk.Ilk.Box Ilk.Box} that contains the a desired in
+ * injected object. The <code>Boxed&lt;T&gt;</code> class is used by the
+ * injector to determine the type of boxed object to inject.
  * 
  * @author Alan Gutierrez
  * 
