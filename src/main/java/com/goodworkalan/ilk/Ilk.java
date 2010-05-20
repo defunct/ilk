@@ -394,7 +394,7 @@ public class Ilk<T> {
             return getKey(getSuperType(type, keyClass));
         }
         
-        public Type[] getActualTypes(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, Type[] types) {
+        private Type[] getActualTypes(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, Type[] types) {
             Type[] actual = new Type[types.length];
             boolean dirty = false;
             for (int i = 0; i < actual.length; i++) {
@@ -404,7 +404,7 @@ public class Ilk<T> {
             return dirty ? actual : types;
         }
 
-        public Type getActualType(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, WildcardType wt) {
+        private Type getActualType(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, WildcardType wt) {
             Type[] lower = wt.getLowerBounds();
             Type[] actualLower = getActualTypes(method, methodTypes, argumentType, lower);
             Type[] upper = wt.getUpperBounds();
@@ -415,7 +415,7 @@ public class Ilk<T> {
             return wt;
         }
         
-        public Type getActualType(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, Type genericType) {
+        private Type getActualType(Method method, Map<TypeVariable<?>, Type> methodTypes, Type argumentType, Type genericType) {
             if (genericType instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) genericType;
                 Type[] types = pt.getActualTypeArguments();
@@ -496,9 +496,9 @@ public class Ilk<T> {
          *                If the number of parameters differ, of if the argument
          *                cannot be assigned to its parameter
          */
-        public Ilk.Box newInstance(Constructor<?> constructor, Ilk.Box...arguments)
+        public Ilk.Box newInstance(Reflect reflect, Constructor<?> constructor, Ilk.Box...arguments)
         throws InstantiationException, IllegalAccessException, InvocationTargetException { 
-            return new Box(this, constructor.newInstance(objects(null, null, constructor.getGenericParameterTypes(), arguments)));
+            return new Box(this, reflect.newInstance(constructor, objects(null, null, constructor.getGenericParameterTypes(), arguments)));
         }
         
         public Ilk.Box invoke(Method method, Ilk.Box object, Ilk.Box...arguments)
@@ -678,7 +678,7 @@ public class Ilk<T> {
          *            The type to assign from.
          * @return True if the types in from can be assinged to the types in to.
          */
-        public static boolean evaluateWildcards(Type to, Type from) {
+        private static boolean evaluateWildcards(Type to, Type from) {
             if (to instanceof WildcardType && !(from instanceof WildcardType)) {
                 WildcardType wt = (WildcardType) to;
                 for (Type type : wt.getLowerBounds()) {
@@ -915,9 +915,9 @@ public class Ilk<T> {
     }
 
     /**
-     * A type-safe heterogeneous container for a single generic object that
-     * preserves type information and safely casts the generic object back to
-     * its generic type.
+     * A type-safe heterogeneous container for a single object that preserves
+     * type information and safely casts a generic object back to its generic
+     * type.
      * 
      * @author Alan Gutierrez
      */
@@ -1004,6 +1004,28 @@ public class Ilk<T> {
                 return UncheckedCast.<C>cast(object);
             }
             throw new ClassCastException();
+        }
+    }
+    
+    public static class Reflect {
+        public Object invoke(Method method, Object object, Object[] arguments)
+        throws IllegalAccessException, InvocationTargetException {
+            return method.invoke(object, arguments);
+        }
+        
+        public Object newInstance(Constructor<?> constructor, Object[] arguments)
+        throws InstantiationException, IllegalAccessException, InvocationTargetException {
+            return constructor.newInstance(arguments);
+        }
+        
+        public Object get(Field field, Object object)
+        throws IllegalAccessException {
+            return field.get(object);
+        }
+        
+        public void set(Field field, Object object, Object value)
+        throws IllegalAccessException {
+            field.set(object, value);
         }
     }
 }
