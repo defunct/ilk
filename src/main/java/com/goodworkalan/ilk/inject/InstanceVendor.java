@@ -1,23 +1,20 @@
 package com.goodworkalan.ilk.inject;
 
-import javax.inject.Provider;
+import java.lang.annotation.Annotation;
 
 import com.goodworkalan.ilk.Ilk;
-import com.goodworkalan.ilk.Ilk.Box;
 
 /**
  * Provides a specific instance of a type.
  * 
  * @author Alan Gutierrez
  * 
- * @param <T>
- *            The type.
+ * @param <I>
+ *            The type to vend.
  */
-class InstanceVendor<T> implements Vendor {
+class InstanceVendor<I> extends Vendor<I> {
     /** The instance. */
-    private final T instance;
-
-    private final Ilk<T> ilk;
+    private final I instance;
     
     /**
      * Create a provider that always returns the given instance.
@@ -25,20 +22,12 @@ class InstanceVendor<T> implements Vendor {
      * @param instance
      *            The instance.
      */
-    public InstanceVendor(Ilk<T> ilk, T instance) {
-        this.ilk = ilk;
+    public InstanceVendor(Ilk<I> ilk, I instance, Class<? extends Annotation> qualifier) {
+        super(ilk, qualifier, NoScope.class);
         this.instance = instance;
     }
     
-    public Ilk.Box instance(Injector injector) {
+    protected Ilk.Box get(Injector injector) {
         return ilk.box(instance);
-    }
-    
-    public Box provider(Injector injector) {
-        return Injector.provider(ilk).box(new Provider<T>() {
-            public T get() {
-                return instance;
-            }
-        });
     }
 }

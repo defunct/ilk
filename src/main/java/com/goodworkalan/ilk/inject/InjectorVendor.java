@@ -1,19 +1,13 @@
 package com.goodworkalan.ilk.inject;
 
-import javax.inject.Provider;
-
 import com.goodworkalan.ilk.Ilk;
 
-class InjectorVendor implements Vendor {
-    public Ilk.Box instance(Injector injector) {
-        return new Ilk<Injector>(Injector.class).box(injector);
+class InjectorVendor extends Vendor<Injector> {
+    public InjectorVendor() {
+        super (new Ilk<Injector>(Injector.class), NoQualifier.class, NoScope.class);
     }
-    
-    public Ilk.Box provider(final Injector injector) {
-        return new Ilk<Provider<Injector>>() {}.box(new Provider<Injector>() {
-            public Injector get() {
-                return injector;
-            }
-        });
+
+    protected Ilk.Box get(Injector injector) {
+        return new Ilk<Injector>(Injector.class).box(injector);
     }
 }

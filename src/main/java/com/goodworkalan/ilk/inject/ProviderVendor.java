@@ -6,29 +6,17 @@ import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-class ProviderVendor<I> implements Vendor {
+class ProviderVendor<I> extends Vendor<I> {
     private final Ilk<? extends Provider<? extends I>> provider;
 
-    private final Ilk<I> type;
-    
-    private final Class<? extends Annotation> qualifier;
-    
-    private final Class<? extends Annotation> scope;
-    
-    public ProviderVendor(Ilk<? extends Provider<? extends I>> provider, Ilk<I> type, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+    public ProviderVendor(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        super(ilk, qualifier, scope);
         this.provider = provider;
-        this.type = type;
-        this.qualifier = qualifier;
-        this.scope = scope;
     }
 
-    public Ilk.Box instance(Injector injector) {
-        return type.box(provider(injector).cast(provider).get());
-    }
-    
-    public Ilk.Box provider(Injector injector) {
+    public Ilk.Box get(Injector injector) {
         injector.startInjection();
-        Ilk.Box box = injector.newInstance(provider.key, qualifier, scope);
+        Ilk.Box box = ilk.box(injector.newInstance(provider.key).cast(provider).get());
         injector.endInjection();
         return box;
     }

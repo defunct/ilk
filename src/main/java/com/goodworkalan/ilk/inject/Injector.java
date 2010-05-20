@@ -6,9 +6,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Qualifier;
+import javax.inject.Scope;
 import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
@@ -34,19 +38,19 @@ import com.goodworkalan.reflective.ReflectiveException;
  */
 public class Injector {
     /** The type of the scope map. */
-    final static Ilk<ConcurrentMap<QualifiedType, Ilk.Box>> SCOPE_TYPE = new Ilk<ConcurrentMap<QualifiedType, Ilk.Box>>(){};
+    final static Ilk<ConcurrentMap<List<Object>, Ilk.Box>> SCOPE_TYPE = new Ilk<ConcurrentMap<List<Object>, Ilk.Box>>(){};
 
     /** The injector parent. */
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders;
+    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> builders;
     
     /** The write lock on all scope containers in this injector. */  
     private final Lock scopeLock = new ReentrantLock();
   
     /** The map of scope annotations to concurrent maps of qualified types to boxes. */
-    private final Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes;
+    private final Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes;
 
     /** The thread based stack of injection invocations. */
     private final ThreadLocal<Injection> INJECTION = new ThreadLocal<Injection>() {
@@ -66,17 +70,17 @@ public class Injector {
      * @param scopes
      *            The scopes collection.
      */
-    Injector(Injector parent, Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders, Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes) {
-        this.builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor>>();
-        this.scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>>();
+    Injector(Injector parent, Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> builders, Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes) {
+        this.builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor<?>>>();
+        this.scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>>();
         if (parent == null && !scopes.containsKey(Singleton.class)) {
-            scopes.put(Singleton.class, new ConcurrentHashMap<QualifiedType, Ilk.Box>());
+            scopes.put(Singleton.class, new ConcurrentHashMap<List<Object>, Ilk.Box>());
         }
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor>> entry : builders.entrySet()) {
-            this.builders.put(entry.getKey(), new IlkAssociation<Vendor>(entry.getValue()));
+        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> entry : builders.entrySet()) {
+            this.builders.put(entry.getKey(), new IlkAssociation<Vendor<?>>(entry.getValue()));
         }
-        for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> entry : scopes.entrySet()) {
-            this.scopes.put(entry.getKey(), new ConcurrentHashMap<QualifiedType, Ilk.Box>(entry.getValue()));
+        for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> entry : scopes.entrySet()) {
+            this.scopes.put(entry.getKey(), new ConcurrentHashMap<List<Object>, Ilk.Box>(entry.getValue()));
         }
         this.parent = parent;
     }
@@ -89,6 +93,10 @@ public class Injector {
         return SCOPE_TYPE.box(scopes.get(scope));
     }
     
+    public <I> I instance(Vendor<I> vendor) {
+        return vendor.instance(this).cast(vendor.ilk);
+    }
+
     // FIXME Interested in showing injector boundaries if an internal injection exception is thrown.
     public <T> T instance(Class<T> type, Class<? extends Annotation> qualifier) {
         return instance(new Ilk<T>(type), qualifier);
@@ -114,7 +122,7 @@ public class Injector {
     }
     
     Ilk.Box provider(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        return getBuilder(key, annotationClass).provider(this);
+        return getVendor(key, annotationClass).provider(this);
     }
     
     void startInjection() {
@@ -125,7 +133,7 @@ public class Injector {
     void endInjection() {
         Injection injection = INJECTION.get();
         if (--injection.injectionDepth == 0) {
-            for (Map.Entry<Class<? extends Annotation>, Map<QualifiedType, Ilk.Box>> entry : injection.scopes.entrySet()) {
+            for (Map.Entry<Class<? extends Annotation>, Map<List<Object>, Ilk.Box>> entry : injection.scopes.entrySet()) {
                 Class<? extends Annotation> scope = entry.getKey();
                 Injector injector = this;
                 while (!injector.scopes.containsKey(scope)) {
@@ -143,25 +151,47 @@ public class Injector {
     }
     
     Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        return getBuilder(key, annotationClass).instance(this);
+        return getVendor(key, annotationClass).instance(this);
     }
 
-    private Vendor getBuilder(Ilk.Key key, Class<? extends Annotation> qualifier) {
+    private Vendor<?> getVendor(Ilk.Key key, Class<? extends Annotation> qualifier) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
-        IlkAssociation<Vendor> stipulationByIlk = builders.get(qualifier);
-        Vendor builder = stipulationByIlk.get(key);
-        if (builder == null) {
+        IlkAssociation<Vendor<?>> stipulationByIlk = builders.get(qualifier);
+        Vendor<?> vendor = stipulationByIlk.get(key);
+        if (vendor == null) {
             if (qualifier.equals(NoQualifier.class)) {
-                Ilk.Key providerKey = new Ilk<VendorProvider<?>>(key) { }.key;
-                builder = new ImplementationVendor(providerKey, key, key, qualifier, NoScope.class);
-                stipulationByIlk.cache(key, Collections.singletonList(builder));
+                Ilk.Key vendorKey = new Ilk.Key((ParameterizedType) IMPLEMENTATION_VENDOR_WILDCARD.key.type, key);
+                Ilk.Box boxedKey = new Ilk<Ilk.Key>(Ilk.Key.class).box(key);
+                Ilk.Box boxedScope = CLASS_ANNOTATION.box(checkScope(key.rawClass));
+                Ilk.Box boxedQualifier = CLASS_ANNOTATION.box(qualifier); 
+                vendor = needsIlkConstructor(vendorKey, key.type, boxedKey, boxedQualifier, boxedScope).cast(IMPLEMENTATION_VENDOR_WILDCARD);
+                stipulationByIlk.cache(key, Collections.<Vendor<?>>singletonList(vendor));
             } else {
-                return getBuilder(key, NoQualifier.class);
+                return getVendor(key, NoQualifier.class);
             }
         }
-        return builder;
+        return vendor;
+    }
+    
+    static final Ilk<ImplementationVendor<?>> IMPLEMENTATION_VENDOR_WILDCARD = new Ilk<ImplementationVendor<?>>() {};
+
+    static final Ilk<Class<? extends Annotation>> CLASS_ANNOTATION = new Ilk<Class<? extends Annotation>>() { };
+    
+    static Class<? extends Annotation> checkScope(Class<?> rawClass) {
+        Class<? extends Annotation> scopeAnnotation = NoScope.class;
+        for (Annotation annotation : rawClass.getAnnotations()) {
+            for (Annotation annotationAnnotation : annotation.annotationType().getAnnotations()) {
+                if (annotationAnnotation.annotationType().equals(Scope.class)) {
+                    if (!scopeAnnotation.equals(NoScope.class)) {
+                        throw new IllegalStateException();
+                    }
+                    scopeAnnotation = annotation.annotationType();
+                }
+            }
+        }
+        return scopeAnnotation;
     }
     
     static <T> Ilk<Provider<T>> provider(Ilk<T> ilk) {
@@ -205,9 +235,13 @@ public class Injector {
         return arguments;
     }
 
-    private Ilk.Box getBoxOrLockScope(Class<? extends Annotation> scope, QualifiedType qt) {
+    Ilk.Box getBoxOrLockScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        if (scope.equals(NoScope.class)) {
+            return null;
+        }
         Injection injection = INJECTION.get();
-        Ilk.Box box = injection.scopes.get(scope).get(qt);
+        List<Object> qualifedType = Arrays.<Object>asList(key, qualifier);
+        Ilk.Box box = injection.scopes.get(scope).get(qualifedType);
         if (box == null) {
             Injector injector = this;
             while (injector != null && !injector.scopes.containsKey(scope)) {
@@ -216,35 +250,29 @@ public class Injector {
             if (injector == null) {
                 throw new NoSuchElementException();
             }
-            box = injector.scopes.get(scope).get(qt);
+            box = injector.scopes.get(scope).get(qualifedType);
             if (box == null) {
                 int lockCount = 1;
-                injector = this;
-                while (injector != null && !injector.scopes.containsKey(scope)) {
+                Injector unlocked = this;
+                do {
                     if (injection.lockHeight < lockCount) {
                         injector.scopeLock.lock();
                         injection.lockHeight++;
                     }
                     lockCount++;
                     injector = injector.parent;
-                }
+                } while (injector != unlocked);
             }
+            // Try again after locking, but hold our locks just the same.
+            box = injection.scopes.get(scope).get(qualifedType);
         }
         return box;
     }
 
-   
-    Ilk.Box newInstance(Ilk.Key ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        if (scope.equals(NoScope.class)) {
-            return newInstance(ilk);
+    void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box) {
+        if (!scope.equals(NoScope.class)) {
+            INJECTION.get().scopes.get(scope).put(Arrays.<Object>asList(key, qualifier), box);
         }
-        QualifiedType qt = new QualifiedType(qualifier, ilk);
-        Ilk.Box box = getBoxOrLockScope(scope, qt);
-        if (box == null) {
-            box = newInstance(ilk);
-            INJECTION.get().scopes.get(scope).put(qt, box);
-        }
-        return box;
     }
     
     Ilk.Box newInstance(final Ilk.Key type) {
@@ -284,4 +312,60 @@ public class Injector {
         }
         return instance;
    }
+
+    /**
+     * Construct an object using reflection that accepts an {@link Ilk} as the
+     * first constructor parameter.
+     * 
+     * @param type
+     *            The type of object to construct.
+     * @param ilk
+     *            The type to encapsulate with an <code>Ilk</code>.
+     * @param arguments
+     *            The additional constructor arguments, boxed.
+     * @return A new boxed instance of the object.
+     */
+    static Ilk.Box needsIlkConstructor(final Ilk.Key type, final Type ilk, final Ilk.Box...arguments) {
+        try {
+            return new Reflective().reflect(new Reflection<Ilk.Box>() {
+                public Ilk.Box reflect()
+                throws InstantiationException,
+                       IllegalAccessException,
+                       InvocationTargetException,
+                       NoSuchMethodException {
+                    Ilk.Box boxedIlk;
+                    if (ilk instanceof ParameterizedType) {
+                        Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((ParameterizedType) ilk)){};
+                        Ilk.Box type = new Ilk<ParameterizedType>(ParameterizedType.class).box((ParameterizedType) ilk);
+                        Constructor<?> newIlk = Ilk.class.getConstructor(ParameterizedType.class);
+                        boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, type);
+                    } else {
+                        Ilk.Box boxedClass = new Ilk.Box((Class<?>) ilk);
+                        Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((Class<?>) ilk)){};
+                        Constructor<?> newIlk = Ilk.class.getConstructor(Class.class);
+                        boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, boxedClass);
+                    }
+                    Class<?>[] parameters = new Class<?>[arguments.length + 1];
+                    final Ilk.Box[] withIlkArguments = new Ilk.Box[arguments.length + 1];
+                    withIlkArguments[0] = boxedIlk;
+                    parameters[0] = boxedIlk.key.rawClass;
+                    for (int i = 0; i < arguments.length; i++) {
+                        withIlkArguments[i + 1] = arguments[i];
+                        parameters[i + 1] = arguments[i].key.rawClass;
+                    }
+                    Constructor<?> newObject = type.rawClass.getConstructor(parameters);
+                    return type.newInstance(new Ilk.Reflect() {
+                        public Object newInstance(Constructor<?> constructor, Object[] arguments)
+                        throws InstantiationException, IllegalAccessException, InvocationTargetException {
+                            return constructor.newInstance(arguments);
+                        }
+                    }, newObject, withIlkArguments);
+                }
+            });
+        } catch (ReflectiveException e) {
+            // This is going to be a programmer error internal to Ilk Inject, so
+            // if you see this, please file a bug report.
+            throw new RuntimeException(e);
+        }
+    }
 }

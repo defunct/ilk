@@ -3,27 +3,18 @@ package com.goodworkalan.ilk.inject;
 import java.lang.annotation.Annotation;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.Ilk.Box;
 
-class ImplementationVendor extends VendorProviderVendor {
-    /** The type qualifier annotation. */
-    private final Class<? extends Annotation> qualifier;
-
-    /** The scope annotation. */
-    private final Class<? extends Annotation> scope;
-    
+class ImplementationVendor<I> extends Vendor<I> {
     private final Ilk.Key implementation;
     
-    public ImplementationVendor(Ilk.Key provider, Ilk.Key iface, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(provider);
-        this.qualifier = qualifier;
-        this.scope = scope;
+    public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        super(ilk, qualifier, scope);
         this.implementation = implementation;
     }
 
-    public Ilk.Box instance(Injector injector) {
-        injector.startInjection();
-        Ilk.Box box = injector.newInstance(implementation, qualifier, scope);
-        injector.endInjection();
-        return box;
+    @Override
+    protected Box get(Injector injector) {
+        return injector.newInstance(implementation);
     }
- }
+}

@@ -27,7 +27,7 @@ class VendorProvider<I> implements Provider<I> {
     private final Ilk<I> ilk;
     
     /** The vendor. */
-    private final Vendor vendor;
+    private final Vendor<I> vendor;
     
     /** The injector. */
     private final Injector injector;
@@ -44,7 +44,7 @@ class VendorProvider<I> implements Provider<I> {
      * @param injector
      *            The injector.
      */
-    public VendorProvider(Ilk<I> ilk, Vendor vendor, Injector injector) {
+    public VendorProvider(Ilk<I> ilk, Vendor<I> vendor, Injector injector) {
         this.injector = injector;
         this.vendor = vendor;
         this.ilk = ilk;

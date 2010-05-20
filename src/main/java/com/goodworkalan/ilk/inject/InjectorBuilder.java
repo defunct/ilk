@@ -2,17 +2,13 @@ package com.goodworkalan.ilk.inject;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.inject.Provider;
-import javax.inject.Qualifier;
-import javax.inject.Scope;
 import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
@@ -41,10 +37,10 @@ public class InjectorBuilder {
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor>> builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor>>();
+    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor<?>>>();
     
     /** The scopes to create in the injector. */
-    private final Map<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>>();
+    private final Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>>();
 
     /**
      * Create a root injector builder.
@@ -75,7 +71,7 @@ public class InjectorBuilder {
      */
     InjectorBuilder(Injector parent) {
         this.parent = parent;
-        bind(new InjectorVendor(), ilk(Injector.class), null);
+        bind(new InjectorVendor());
         scope(InjectorScoped.class);
     }
 
@@ -116,78 +112,32 @@ public class InjectorBuilder {
      *            The injector builder to copy.
      */
     public void consume(InjectorBuilder newInjector) {
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor>> entry : newInjector.builders.entrySet()) {
-            IlkAssociation<Vendor> associations = this.builders.get(entry.getKey());
+        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> entry : newInjector.builders.entrySet()) {
+            IlkAssociation<Vendor<?>> associations = this.builders.get(entry.getKey());
             if (associations == null) {
-                associations = new IlkAssociation<Vendor>(false);
+                associations = new IlkAssociation<Vendor<?>>(false);
                 this.builders.put(entry.getKey(), associations);
             }
             associations.addAll(entry.getValue());
         }
-        for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<QualifiedType, Ilk.Box>> entry : newInjector.scopes.entrySet()) {
-            ConcurrentMap<QualifiedType, Ilk.Box> scope = this.scopes.get(entry.getKey());
+        for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> entry : newInjector.scopes.entrySet()) {
+            ConcurrentMap<List<Object>, Ilk.Box> scope = this.scopes.get(entry.getKey());
             if (scope == null) {
-                scope = new ConcurrentHashMap<QualifiedType, Ilk.Box>();
+                scope = new ConcurrentHashMap<List<Object>, Ilk.Box>();
                 this.scopes.put(entry.getKey(), scope);
             }
             scope.putAll(entry.getValue());
         }
     }
 
-    /**
-     * Check that the given annotation is a scope annotation, or if it is null
-     * convert it into a hidden no-scope annotation.
-     * 
-     * @param scope
-     *            The scope annotation.
-     * @return The given annotation or a hidden no scope annotation if it is
-     *         null.
-     * @exception IllegalArgumentException
-     *                If the given annotation is not annotated with the
-     *                scope annotation.
-     */
-    static Class<? extends Annotation> checkScope(Class<? extends Annotation> scope) {
-        if (scope == null) {
-            return NoScope.class;
-        }
-        if (scope.getAnnotation(Scope.class) == null) {
-            throw new IllegalArgumentException();
-        }
-        return scope;
-    }
-
-    /**
-     * Check that the given annotation is a qualifier annotation, or if it is
-     * null convert it into a hidden no-qualifier annotation.
-     * 
-     * @param qualifier
-     *            The qualifier annotation.
-     * @return The given annotation or a hidden no qualifier annotation if it is
-     *         null.
-     * @exception IllegalArgumentException
-     *                If the given annotation is not annotated with the
-     *                qualifier annotation.
-     */
-    static Class<? extends Annotation> checkQualifier(Class<? extends Annotation> qualifier) {
-        if (qualifier == null) {
-            return NoQualifier.class;
-        }
-        if (qualifier.getAnnotation(Qualifier.class) == null) {
-            throw new IllegalArgumentException();
-        }
-        return qualifier;
-    }
-
-    final <I> void bind(Vendor builder, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
-        if (qualifier == null) {
-            qualifier = NoQualifier.class;
-        }
-        IlkAssociation<Vendor> builderByIlk = builders.get(qualifier);
+    public <I> Vendor<I> bind(Vendor<I> vendor) {
+        IlkAssociation<Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
         if (builderByIlk == null) {
-            builderByIlk = new IlkAssociation<Vendor>(false);
-            builders.put(qualifier, builderByIlk);
+            builderByIlk = new IlkAssociation<Vendor<?>>(false);
+            builders.put(vendor.qualifier, builderByIlk);
         }
-        builderByIlk.assignable(ilk.key, builder);
+        builderByIlk.assignable(vendor.ilk.key, vendor);
+        return vendor;
     }
 
     /**
@@ -211,8 +161,8 @@ public class InjectorBuilder {
      * @param scope
      *            The scope or null to build a new instance every time.
      */
-    public <I> void implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new ImplementationVendor(new Ilk<VendorProvider<I>>(ilk.key) {}.key, ilk.key, implementation.key, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
+    public <I> Vendor<I> implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope));
     }
 
     /**
@@ -234,8 +184,8 @@ public class InjectorBuilder {
      * @param scope
      *            The scope or null to build a new instance every time.
      */
-    public <I> void provider(Provider<? extends I> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new ProviderInstanceVendor<I>(ilk, provider), ilk, qualifier);
+    public <I> Vendor<I> provider(Provider<? extends I> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        return bind(new ProviderInstanceVendor<I>(ilk, provider, qualifier, scope));
     }
 
     /**
@@ -257,8 +207,8 @@ public class InjectorBuilder {
      * @param scope
      *            The scope or null to build a new instance every time.
      */
-    public <I> void provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        bind(new ProviderVendor<I>(provider, ilk, checkQualifier(qualifier), checkScope(scope)), ilk, qualifier);
+    public <I> Vendor<I> provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        return bind(new ProviderVendor<I>(provider, ilk, qualifier, scope));
     }
 
     /**
@@ -277,64 +227,7 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      */
     public <T> void instance(T instance, Ilk<T> type, Class<? extends Annotation> qualifier) {
-        bind(new InstanceVendor<T>(type, instance), type, qualifier);
-    }
-
-    /**
-     * Create a list multi-binding that will create a list of implementation
-     * instances and bind it a to a list of the given super type token to bind.
-     * The list is qualified by the given qualifier and stored in the given
-     * scope. If the qualifier is null, then the binding is used for unqualified
-     * requests for a list of the given bound type. If the scope is null, a new
-     * instance of the list is constructed for each request for the list.
-     * <p>
-     * A list builder is returned to specify the bindings for the list.
-     * 
-     * @param <I>
-     *            The type to bind.
-     * @param ilk
-     *            The super type token of the type to bind.
-     * @param qualifier
-     *            The qualifier or null for unqualified.
-     * @param scope
-     *            The scope or null to build a new list every time.
-     * @return A list builder to define the implementations used to populate the
-     *         list.
-     */
-    public <I> ListBinder<I> list(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        List<Vendor> builders = new ArrayList<Vendor>();
-        bind(new ListVendor<I>(builders, ilk), ilk, qualifier);
-        return new ListBinder<I>(ilk, builders);
-    }
-
-    /**
-     * Create a map multi-binding that will create a map of implementation
-     * instances and bind it a to a map of the given super type token to bind
-     * indexed by the given key type. The map is qualified by the given
-     * qualifier and stored in the given scope. If the qualifier is null, then
-     * the binding is used for unqualified requests for a map of the given bound
-     * type. If the scope is null, a new instance of the map is constructed for
-     * each request for the map.
-     * <p>
-     * A map builder is returned to specify the bindings for the map.
-     * 
-     * @param <K>
-     *            Type key type.
-     * @param <I>
-     *            The type to bind.
-     * @param ilk
-     *            The super type token of the type to bind.
-     * @param qualifier
-     *            The qualifier or null for unqualified.
-     * @param scope
-     *            The scope or null to build a new list every time.
-     * @return A map builder to define the implementations used to populate the
-     *         map.
-     */
-    public <K, I> MapBinder<K, I> map(Ilk<K> keyIlk, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        Map<K, Vendor> builders = new LinkedHashMap<K, Vendor>();
-        bind(new MapVendor<K, I>(builders, keyIlk, ilk), ilk, qualifier);
-        return new MapBinder<K, I>(ilk, builders);
+        bind(new InstanceVendor<T>(type, instance, qualifier));
     }
 
     /**
@@ -417,8 +310,8 @@ public class InjectorBuilder {
      *            The opaque collection of scope values.
      */
     public void scope(Class<? extends Annotation> scope, Ilk.Box values) {
-        checkScope(scope);
-        scopes.put(scope, values == null ? new ConcurrentHashMap<QualifiedType, Ilk.Box>() : values.cast(Injector.SCOPE_TYPE));
+        Vendor.checkScope(scope);
+        scopes.put(scope, values == null ? new ConcurrentHashMap<List<Object>, Ilk.Box>() : values.cast(Injector.SCOPE_TYPE));
     }
 
     /**
