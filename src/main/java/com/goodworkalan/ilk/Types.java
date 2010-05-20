@@ -130,11 +130,11 @@ class Types {
             this.upperBounds = upperBounds;
         }
         public Type[] getLowerBounds() {
-            return lowerBounds;
+            return lowerBounds.clone();
         }
         
         public Type[] getUpperBounds() {
-            return upperBounds;
+            return upperBounds.clone();
         }
         
         public String toString() {

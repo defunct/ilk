@@ -11,11 +11,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -150,19 +148,6 @@ public class Ilk<T> {
         return new Box(key, object);
     }
 
-    /**
-     * Get a list of constructors for the key class.
-     * 
-     * @return A list of constructors.
-     */
-    public List<Constructor<T>> getConstructors() {
-        List<Constructor<T>> constructors = new ArrayList<Constructor<T>>();
-        for (Constructor<?> constructor : getRawClass(key.type).getConstructors()) {
-            constructors.add(UncheckedCast.<Constructor<T>>cast(constructor));
-        }
-        return constructors;
-    }
-    
     public String toString() {
         return key.toString();
     }
@@ -859,14 +844,11 @@ public class Ilk<T> {
          * @return The hash code.
          */
         private static int makeHashCode(ParameterizedType pt) {
-            int hashCode = 1999;
-            Type[] actual = pt.getActualTypeArguments();
-            for (int i = 0, stop = actual.length; i < stop; i++) {
-                hashCode = hashCode * 37 + makeHashCode(actual[i]);
-            }
-            hashCode = hashCode * 37 + makeHashCode(pt.getOwnerType());
-            hashCode = hashCode * 37 + makeHashCode(pt.getRawType());
-            return hashCode;
+            return Arrays.asList(pt.getRawType(), pt.getOwnerType(), Arrays.asList(pt.getActualTypeArguments())).hashCode();
+        }
+        
+        private static int makeHashCode(WildcardType wt) {
+            return Arrays.<Object>asList(Arrays.asList(wt.getLowerBounds()), Arrays.asList(wt.getLowerBounds())).hashCode();
         }
 
         /**
@@ -884,6 +866,9 @@ public class Ilk<T> {
             }
             if (type instanceof ParameterizedType) {
                 return makeHashCode((ParameterizedType) type);
+            }
+            if (type instanceof WildcardType) {
+                return makeHashCode((WildcardType) type);
             }
             return type.hashCode();
         }
@@ -961,18 +946,6 @@ public class Ilk<T> {
             this.object = unboxedClass;
         }
 
-//        /**
-//         * Create a box around the given object of a class that has no generic
-//         * type parameters.
-//         * 
-//         * @param object
-//         *            The object to box.
-//         */
-//        public Box(Object object) {
-//            this.key = new Key(object.getClass());
-//            this.object = object;
-//        }
-
         /**
          * Cast the given object to the given class.
          * 
@@ -990,6 +963,12 @@ public class Ilk<T> {
 
         /**
          * Cast the given object to the given class.
+         * <p>
+         * This method generate the only unchecked cast warning in all of the
+         * <code>Ilk</code> classes. Because we first check the assignability of
+         * the key in the given <code>ilk</code> against the key property of
+         * this <code>Ilk.Box</code>, we know that the unchecked cast is
+         * actually safe, so we can suppress the unchecked warning.
          * 
          * @param <C>
          *            The type to cast to.
@@ -999,9 +978,10 @@ public class Ilk<T> {
          * @exception ClassCastException
          *                If the object is not of the given type.
          */
+        @SuppressWarnings("unchecked")
         public <C> C cast(Ilk<C> ilk) {
             if (ilk.key.isAssignableFrom(key)) {
-                return UncheckedCast.<C>cast(object);
+                return (C) object;
             }
             throw new ClassCastException();
         }

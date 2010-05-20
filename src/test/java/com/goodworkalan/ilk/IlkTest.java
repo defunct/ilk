@@ -56,19 +56,6 @@ public class IlkTest {
         assertEquals(key.toString(),  "java.util.List<java.lang.String>");
     }
     
-    /** Test the constructor iterator.  */
-    @Test
-    public void constructors() throws IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        Ilk<ArrayList<String>> ilk = new Ilk<ArrayList<String>>() { };
-        List<String> list = null;
-        for (Constructor<ArrayList<String>> constructor : ilk.getConstructors()) {
-            if (constructor.getParameterTypes().length == 0) {
-                list = constructor.newInstance();
-            }
-        }
-        assertNotNull(list);
-    }
-    
     /** Test quality. */
     @Test
     public void equality() {
