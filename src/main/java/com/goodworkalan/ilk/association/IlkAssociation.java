@@ -97,9 +97,25 @@ public class IlkAssociation<T> {
      */
     public IlkAssociation(IlkAssociation<T> copy) {
         this.multi = copy.multi;
-        this.exact.putAll(copy.exact);
-        this.assignable.putAll(copy.assignable);
-        this.annotated.putAll(copy.annotated);
+        addAll(copy);
+    }
+    
+    public synchronized void addAll(IlkAssociation<T> other) {
+        addAll(exact, other.exact);
+        addAll(assignable, other.assignable);
+        for (Map.Entry<Class<? extends Annotation>, List<T>> entry : other.annotated.entrySet()) {
+            for (T value : entry.getValue()) {
+                annotated(entry.getKey(), value);
+            }
+        }
+    }
+    
+    private void addAll(Map<Class<?>, Map<Ilk.Key, List<T>>> dest, Map<Class<?>, Map<Ilk.Key, List<T>>> source) {
+        for (Map<Ilk.Key, List<T>> ilks : source.values()) {
+            for (Ilk.Key key : ilks.keySet()) {
+                dest.put(key.rawClass, add(dest, key, ilks.get(key)));
+            }
+        }
     }
 
     /**
@@ -129,7 +145,7 @@ public class IlkAssociation<T> {
      *            The value to associate with the type.
      */
     public synchronized void exact(Ilk.Key key, T value) {
-        Map<Ilk.Key, List<T>> pairs = add(exact, key, value);
+        Map<Ilk.Key, List<T>> pairs = add(exact, key, Collections.singletonList(value));
         exact.put(key.rawClass, pairs);
         cache.clear();
     }
@@ -149,18 +165,20 @@ public class IlkAssociation<T> {
      * @return A copy of the ilk pair list with the value added to the list
      *         associated with the key.
      */
-    private Map<Ilk.Key, List<T>> add(Map<Class<?>, Map<Ilk.Key, List<T>>> map, Ilk.Key key, T value) {
-        Map<Ilk.Key, List<T>> pairs = copy(key.rawClass, exact);
+    private Map<Ilk.Key, List<T>> add(Map<Class<?>, Map<Ilk.Key, List<T>>> map, Ilk.Key key, List<T> values) {
+        Map<Ilk.Key, List<T>> pairs = copy(key.rawClass, map);
         for (Map.Entry<Ilk.Key, List<T>> pair : pairs.entrySet()) {
             if (pair.getKey().equals(key)) {
-                if (!multi) {
+                if (multi) {
+                    pair.getValue().addAll(values);
+                } else {
                     pair.getValue().clear();
+                    pair.getValue().add(values.get(0));
                 }
-                pair.getValue().add(value);
                 return pairs;
             }
         }
-        pairs.put(key, Collections.singletonList(value));
+        pairs.put(key, values);
         return pairs;
     }
 
@@ -216,7 +234,7 @@ public class IlkAssociation<T> {
      *            The value to associate with the type.
      */
     public synchronized void assignable(Ilk.Key key, T value) {
-        Map<Ilk.Key, List<T>> pairs = add(assignable, key, value);
+        Map<Ilk.Key, List<T>> pairs = add(assignable, key, Collections.singletonList(value));
         assignable.put(key.rawClass, pairs);
         cache.clear();
     }
@@ -284,6 +302,7 @@ public class IlkAssociation<T> {
                 }
             }
             for (Annotation annotation : key.rawClass.getAnnotations()) {
+                // Get to shrink the code a few bytes when I use annotatedType().
                 for (Map.Entry<Class<? extends Annotation>, List<T>> entry : annotated.entrySet()) {
                     if (entry.getKey().isAssignableFrom(annotation.getClass())) {
                         values.addAll(entry.getValue());
@@ -318,5 +337,20 @@ public class IlkAssociation<T> {
             cache.put(key, values);
         }
         return values;
+    }
+
+    /**
+     * Often times the contents have typed values, ilk created, so it's best to
+     * poke it in through the front, since that's where the compiler type
+     * information will be. Tried having a missing method, but there was no type
+     * information with ilk.
+     * 
+     * @param key
+     *            The key.
+     * @param values
+     *            The cache values.
+     */
+    public void cache(Ilk.Key key, List<T> values) {
+        cache.put(key, new LinkedList<T>(values));
     }
 }

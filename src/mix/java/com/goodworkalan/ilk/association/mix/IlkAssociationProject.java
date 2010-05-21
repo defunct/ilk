@@ -5,7 +5,7 @@ import com.goodworkalan.mix.builder.Builder;
 import com.goodworkalan.mix.builder.JavaProject;
 
 /**
- * Build definition for Ilk Association.
+ * Buils the project  definition for Ilk Association.
  *
  * @author Alan Gutierrez
  */
