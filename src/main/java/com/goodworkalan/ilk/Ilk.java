@@ -154,6 +154,13 @@ public class Ilk<T> {
 
     /**
      * Decorator of a Java class that tests assignability of type parameters.
+     * <p>
+     * FIXME I do not need all this in this class. I can simply assert that an
+     * ilk key is built around a parameterized type or a raw class. All of the
+     * reflection, all of the replacement, can be moved to external classes.
+     * <p>
+     * It is important to keep his minimal so that something like Stash does not
+     * become 32K library.
      * 
      * @author Alan Gutierrez
      */
@@ -179,8 +186,6 @@ public class Ilk<T> {
          *            The type.
          * @param keys
          *            The list of keys.
-         * @return The type with the types replaced with the types represented
-         *         by the list of keys.
          * @exception IllegalArgumentException
          *                If there are not enough or too many keys to replace
          *                the type parameters.
@@ -256,6 +261,9 @@ public class Ilk<T> {
          * parameterized types in the type parameters. In other words, the queue
          * of keys must contain enough keys to satisfy all of the type variables
          * and wildcards the full type declaration of the given type.
+         * <p>
+         * FIXME Move this to its own package, call it actualize and perform
+         * only on types.
          * 
          * @param type
          *            The type.
@@ -457,6 +465,11 @@ public class Ilk<T> {
             }
             return keys;
         }
+        
+        public Ilk.Box newInstance(Reflector reflector)
+        throws InstantiationException, IllegalAccessException {
+            return new Box(this, reflector.newInstance(rawClass));
+        }
 
         /**
          * Create a boxed new instance of type represented by this key using the
@@ -481,26 +494,26 @@ public class Ilk<T> {
          *                If the number of parameters differ, of if the argument
          *                cannot be assigned to its parameter
          */
-        public Ilk.Box newInstance(Reflect reflect, Constructor<?> constructor, Ilk.Box...arguments)
+        public Ilk.Box newInstance(Reflector reflector, Constructor<?> constructor, Ilk.Box...arguments)
         throws InstantiationException, IllegalAccessException, InvocationTargetException { 
-            return new Box(this, reflect.newInstance(constructor, objects(null, null, constructor.getGenericParameterTypes(), arguments)));
+            return new Box(this, reflector.newInstance(constructor, objects(null, null, constructor.getGenericParameterTypes(), arguments)));
         }
         
-        public Ilk.Box invoke(Method method, Ilk.Box object, Ilk.Box...arguments)
+        public Ilk.Box invoke(Reflector reflector, Method method, Ilk.Box object, Ilk.Box...arguments)
         throws IllegalAccessException, InvocationTargetException {
             if (!isAssignableFrom(object.key)) {
                 throw new IllegalArgumentException();
             }
             Map<TypeVariable<?>, Type> methodTypes = new IdentityHashMap<TypeVariable<?>, Type>();
             Object[] objects = objects(method, methodTypes, method.getGenericParameterTypes(), arguments);
-            return enbox(key(getActualType(method, methodTypes, null, method.getGenericReturnType())), method.invoke(object.object, objects));
+            return enbox(key(getActualType(method, methodTypes, null, method.getGenericReturnType())), reflector.invoke(method, object.object, objects));
         }
         
-        public void set(Field field, Ilk.Box object, Ilk.Box value)
+        public void set(Reflector reflector, Field field, Ilk.Box object, Ilk.Box value)
         throws IllegalAccessException {
             isAssignableFrom(object.key);
             getKey(field.getGenericType()).isAssignableFrom(value.key);
-            field.set(object.object, value.object);
+            reflector.set(field, object.object, value.object);
         }
 
         /**
@@ -520,10 +533,10 @@ public class Ilk<T> {
             return new Box(key, object);
         }
 
-        public Ilk.Box get(Field field, Ilk.Box object)
+        public Ilk.Box get(Reflector reflector, Field field, Ilk.Box object)
         throws IllegalAccessException {
             isAssignableFrom(object.key);
-            return enbox(getKey(field.getGenericType()), field.get(object.object));
+            return enbox(getKey(field.getGenericType()), reflector.get(field, object.object));
         }
 
         public Object[] objects(Method method, Map<TypeVariable<?>, Type> methodTypes, Type[] types, Box[] boxes) {
@@ -715,12 +728,12 @@ public class Ilk<T> {
          *         this key.
          */
         public boolean isAssignableFrom(Key key) {
-            if (getRawClass(type).isAssignableFrom(getRawClass(key.type))) {
+            if (rawClass.isAssignableFrom(key.rawClass)) {
                 if (type instanceof Class<?>) { 
                     return true;
                 }
-                Ilk.Key adjusted = key.getSuperKey(getRawClass(type));
-                return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted.type).getActualTypeArguments());
+                Type adjusted = getSuperType(key.type, rawClass);
+                return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted).getActualTypeArguments());
             }
             return false;
         }
@@ -750,6 +763,8 @@ public class Ilk<T> {
          * Determine if the two arrays are the same length and if each element
          * in the left array is equal to the element at the same index in the
          * right array.
+         * <p>
+         * FIXME Move to Types.
          * 
          * @param left
          *            One of two arrays to compare for equality.
@@ -987,15 +1002,23 @@ public class Ilk<T> {
         }
     }
     
-    public static class Reflect {
-        public Object invoke(Method method, Object object, Object[] arguments)
-        throws IllegalAccessException, InvocationTargetException {
-            return method.invoke(object, arguments);
+    public static final Reflector REFLECTOR = new Reflector();
+    
+    // FIXME This can move out.
+    public static class Reflector {
+        public Object newInstance(Class<?> type)
+        throws InstantiationException, IllegalAccessException {
+            return type.newInstance();
         }
-        
+
         public Object newInstance(Constructor<?> constructor, Object[] arguments)
         throws InstantiationException, IllegalAccessException, InvocationTargetException {
             return constructor.newInstance(arguments);
+        }
+        
+        public Object invoke(Method method, Object object, Object[] arguments)
+        throws IllegalAccessException, InvocationTargetException {
+            return method.invoke(object, arguments);
         }
         
         public Object get(Field field, Object object)
