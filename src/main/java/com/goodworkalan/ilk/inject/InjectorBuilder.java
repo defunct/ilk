@@ -76,6 +76,23 @@ public class InjectorBuilder {
         builders.put(NoQualifier.class, new IlkAssociation<Vendor<?>>(false));
     }
 
+    private final Map<Package, Ilk.Reflector> reflectors = new HashMap<Package, Ilk.Reflector>();
+
+    /**
+     * Build package private implementations and <code>Provider&lt;T&gt;</code>
+     * implementations defined in the package of the given <code>reflect</code>
+     * implementation with the given <code>reflect</code>.
+     * <p>
+     * The given reflect will only be used to reflect upon classes specified
+     * in the bindings in this injector builder. It cannot be used to instanciate
+     * arbitrary package private classes in the package.
+     * 
+     * @param reflect The reflect implementation.
+     */
+    public void reflector(Ilk.Reflector reflector) {
+        reflectors.put(reflector.getClass().getPackage(), reflector);
+    }
+
     /**
      * Add the given injector builder as a module. This will invoke the build
      * method of the given injector builder to define bindings and scopes in the
@@ -87,6 +104,8 @@ public class InjectorBuilder {
      * restored from the copy after invoking build and consuming the module. In
      * this way, the module can be used multiple times, each time build will be
      * rerun from its initial state. This is a defensive measure.
+     * <p>
+     * Note that the package specific reflectors are not copied.
      * 
      * @param module
      *            The module to build and consume.
@@ -163,7 +182,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> Vendor<I> implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope));
+        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(implementation.key.rawClass.getPackage())));
     }
 
     /**
@@ -209,7 +228,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> Vendor<I> provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ProviderVendor<I>(provider, ilk, qualifier, scope));
+        return bind(new ProviderVendor<I>(provider, ilk, qualifier, scope, reflectors.get(provider.getClass().getPackage())));
     }
 
     /**

@@ -9,8 +9,8 @@ import com.goodworkalan.ilk.Ilk;
 class ProviderVendor<I> extends Vendor<I> {
     private final Ilk<? extends Provider<? extends I>> provider;
 
-    public ProviderVendor(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(ilk, qualifier, scope);
+    public ProviderVendor(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Reflector reflector) {
+        super(ilk, qualifier, scope, reflector);
         this.provider = provider;
     }
 

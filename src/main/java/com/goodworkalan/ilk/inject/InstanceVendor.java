@@ -23,7 +23,7 @@ class InstanceVendor<I> extends Vendor<I> {
      *            The instance.
      */
     public InstanceVendor(Ilk<I> ilk, I instance, Class<? extends Annotation> qualifier) {
-        super(ilk, qualifier, null);
+        super(ilk, qualifier, null, null);
         this.instance = instance;
     }
     

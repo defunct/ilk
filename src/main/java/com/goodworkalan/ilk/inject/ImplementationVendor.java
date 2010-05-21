@@ -8,13 +8,13 @@ import com.goodworkalan.ilk.Ilk.Box;
 class ImplementationVendor<I> extends Vendor<I> {
     private final Ilk.Key implementation;
     
-    public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(ilk, qualifier, scope);
+    public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Reflector reflector) {
+        super(ilk, qualifier, scope, reflector);
         this.implementation = implementation;
     }
     
     public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation) {
-        this(ilk, implementation, null, null);
+        this(ilk, implementation, null, null, null);
     }
 
     @Override

@@ -10,7 +10,7 @@ class ProviderInstanceVendor<I> extends Vendor<I> {
     private final Provider<? extends I> provider;
     
     public ProviderInstanceVendor(Ilk<I> ilk, Provider<? extends I> provider, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(ilk, qualifier, scope);
+        super(ilk, qualifier, scope, null);
         this.provider = provider;
     }
 

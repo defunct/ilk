@@ -1,50 +1,62 @@
 package com.goodworkalan.ilk.inject;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 /**
- * A general purpose exception that indicates that an error occurred in one 
- * of the classes in the inject package.
- *   
- * @author Alan Gutierrez
+ * <blockquote>
+ * 
+ * <pre>
+ * try {
+ *     inejctor.inject(box, method);
+ * } catch (InjectException e) {
+ *     throw new InjectException(_(&quot;Cannot load java.lang.String.&quot;, e), e);
+ * } catch (Throwable e) {
+ *     throw new InjectException(_(&quot;Cannot reflect upon.&quot;, e, cls), e);
+ * }
+ * </pre>
+ * 
+ * </blockquote>
+ * 
+ * @author alan
+ * 
  */
-public final class InjectException extends RuntimeException {
+public class InjectException extends RuntimeException {
     /** The serial version id. */
     private static final long serialVersionUID = 1L;
 
-    /** Unable to create a class because there are more than injectable constructors. */
-    public final static int MULTIPLE_INJECTABLE_CONSTRUCTORS = 301;
-    
-    /** The exception error code. */
-    public final int code;
-    
-    /** The exception properties. */
-    public final Map<String, Object> properties = new LinkedHashMap<String, Object>();
+    public InjectException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
     /**
-     * Wrap the given cause exception in an <code>InjectException</code> with
-     * the given error code.
+     * <blockquote>
      * 
-     * @param code
-     *            The error code.
+     * <pre>
+     * try {
+     *     reflect(Class.forName(&quot;java.lang.String&quot;));
+     * } catch (ClassNotFoundException e) {
+     *     throw new InjectException(_(&quot;Cannot load java.lang.String.&quot;, e), e);
+     * } catch (Throwable e) {
+     *     throw new InjectException(_(&quot;Cannot reflect upon.&quot;, e, cls), e);
+     * }
+     * </pre>
+     * 
+     * </blockquote>
+     * 
+     * @param format
      * @param cause
-     *            The cause exception.
      * @param arguments
-     *            The positioned format arguments.
+     * @return
      */
-    InjectException(int code, Throwable cause) {
-        super(null, cause);
-        this.code = code;
-    }
-    
-    public InjectException put(String name, Object value) {
-        properties.put(name, value);
-        return this;
-    }
-    
-    @Override
-    public String getMessage() {
-        return "[" + code + "]: " + properties.toString();
+    static String _(String format, Throwable cause, Object... arguments) {
+        if (cause instanceof Error) {
+            if (!(cause instanceof ExceptionInInitializerError)) {
+                throw (Error) cause;
+            }
+        }
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof Class<?>) {
+                arguments[i] = ((Class<?>) arguments[i]).getName();
+            }
+        }
+        return String.format(format, arguments);
     }
 }

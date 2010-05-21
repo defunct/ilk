@@ -21,6 +21,8 @@ class Injection {
     
     public Queue<Ilk.Box> unset = new LinkedList<Ilk.Box>();
     
+    public Queue<Ilk.Reflector> reflectors = new LinkedList<Ilk.Reflector>();
+
     public boolean setting;
 
    /**

@@ -1,6 +1,6 @@
 package com.goodworkalan.ilk.inject;
 
-import static com.goodworkalan.ilk.inject.InjectException.MULTIPLE_INJECTABLE_CONSTRUCTORS;
+import static com.goodworkalan.ilk.inject.InjectException._;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -26,7 +26,6 @@ import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.association.IlkAssociation;
-import com.goodworkalan.reflective.Reflective;
 
 /**
  * Create object graphs with dependency.
@@ -107,19 +106,19 @@ public class Injector {
         return provider(ilk.key, qualifier).cast(new Ilk<Provider<T>>(ilk.key) {});
     }
     
-    public Ilk.Box inject(Ilk.Box box, Method method) {
+    public Ilk.Box inject(Ilk.Reflector reflector, Ilk.Box box, Method method) {
         try {
-            return box.key.invoke(method, box, arguments(box.key, method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
+            return box.key.invoke(reflector, method, box, arguments(box.key, method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
         } catch (Throwable e) {
-            throw new InjectException(Reflective.encode(e), e);
+            throw new InjectException(_("Unable to inject method [%s] in class [%s].", e, method.getName(), box.key.rawClass), e);
         }
     }
     
-    public void inject(Ilk.Box box, Field field) {
+    public void inject(Ilk.Reflector reflector, Ilk.Box box, Field field) {
         try {
-            box.key.set(field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
+            box.key.set(reflector, field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
         } catch (Throwable e) {
-            throw new InjectException(Reflective.encode(e), e);
+            throw new InjectException(_("Unable to inject field [%s] in class [%s].", e, field.getName(), box.key.rawClass), e);
         }
     }
     
@@ -142,15 +141,16 @@ public class Injector {
             injection.setting = true;
             while (!injection.unset.isEmpty()) {
                 Ilk.Box box = injection.unset.remove();
+                Ilk.Reflector reflector = injection.reflectors.remove();
                 for (Method method : box.key.rawClass.getMethods()) {
                     if (null != method.getAnnotation(Inject.class)) {
-                        inject(box, method);
+                        inject(reflector, box, method);
                         break;
                     }
                 }
                 for (Field field : box.key.rawClass.getFields()) {
                     if (null != field.getAnnotation(Inject.class)) {
-                        inject(box, field);
+                        inject(reflector, box, field);
                         break;
                     }
                 }
@@ -209,7 +209,7 @@ public class Injector {
             if (qualifier.equals(NoQualifier.class)) {
                 Ilk.Key vendorKey = new Ilk.Key((ParameterizedType) IMPLEMENTATION_VENDOR_WILDCARD.key.type, key);
                 Ilk.Box boxedKey = new Ilk<Ilk.Key>(Ilk.Key.class).box(key);
-                return needsIlkConstructor(vendorKey, key.type, boxedKey).cast(IMPLEMENTATION_VENDOR_WILDCARD);
+                return needsIlkConstructor(Ilk.REFLECTOR, vendorKey, key.type, boxedKey).cast(IMPLEMENTATION_VENDOR_WILDCARD);
             }
             return getVendor(key, NoQualifier.class);
         }
@@ -236,9 +236,14 @@ public class Injector {
                 Ilk.Key key = keys[i];
                 Ilk.Box box = instance(new Ilk.Key(keys[i].getKeys(keys[i].rawClass.getTypeParameters())[0]), qualifierClass);
                 try {
-                    arguments[i] = key.newInstance(Ilk.REFLECT, Boxed.class.getConstructor(Ilk.Box.class), box);
+                    arguments[i] = key.newInstance(Ilk.REFLECTOR, Boxed.class.getConstructor(Ilk.Box.class), box);
                 } catch (Throwable e) {
-                    throw new InjectException(Reflective.encode(e), e);
+                    // This is unlikely, it means some of the Boxed class is
+                    // missing or corrupt. Just in case it does occur, we make
+                    // sure not to wrap it in an InjectException, because the
+                    // caller will not know that this is a problem with the Ilk
+                    // Inject library itself, not object graph or the objects in it.
+                    throw new RuntimeException(_("Unable to create a [%s] to encapsulate an [%s].", e, Boxed.class, box.key.rawClass), e);
                 }
             } else {
                 arguments[i] = instance(keys[i], qualifierClass);
@@ -284,9 +289,10 @@ public class Injector {
         return box;
     }
 
-    void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box) {
+    void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box, Ilk.Reflector reflector) {
         Injection injection = INJECTION.get();
         injection.unset.offer(box);
+        injection.reflectors.offer(reflector);
         if (!scope.equals(NoScope.class)) {
             injection.scopes.get(scope).put(Arrays.<Object>asList(key, qualifier), box);
         }
@@ -296,13 +302,11 @@ public class Injector {
         Constructor<?> injectable = null;
         Constructor<?> noArgument = null;
         for (java.lang.reflect.Constructor<?> constructor : type.rawClass.getConstructors()) {
-            for (Annotation annotation : constructor.getAnnotations()) {
-                if (annotation instanceof Inject) {
-                    if (injectable != null) {
-                        throw new InjectException(MULTIPLE_INJECTABLE_CONSTRUCTORS, null).put("type", type);
-                    }
-                    injectable = constructor;
-                } 
+            if (constructor.getAnnotation(Inject.class) != null) {
+                if (injectable != null) {
+                    throw new InjectException(_("Multiple injectable constructors found for [%s].", null, type.rawClass), null);
+                }
+                injectable = constructor;
             } 
             if (constructor.getTypeParameters().length == 0) {
                 noArgument = constructor;
@@ -312,19 +316,23 @@ public class Injector {
             injectable = noArgument;
         }
         if (injectable == null) {
-            throw new InjectException(0, null).put("type", type);
+            throw new InjectException(_("No injectable constructor found for [%s].", null, type.rawClass), null);
         }
         try {
-            return type.newInstance(Ilk.REFLECT, injectable, arguments(type, injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable.getGenericParameterTypes()));
+            return type.newInstance(Ilk.REFLECTOR, injectable, arguments(type, injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable.getGenericParameterTypes()));
         } catch (Throwable e) {
-            throw new InjectException(Reflective.encode(e), e);
+            throw new InjectException(_("Unable to create new instance of [%s].", e, type.rawClass), e);
         }
     }
-    
+
     /**
      * Construct an object using reflection that accepts an {@link Ilk} as the
      * first constructor parameter.
      * 
+     * @param reflector
+     *            The reflector to use to create public objects, exposed for
+     *            unit testing the unlikely occurrence of a reflection
+     *            exception.
      * @param type
      *            The type of object to construct.
      * @param ilk
@@ -333,19 +341,19 @@ public class Injector {
      *            The additional constructor arguments, boxed.
      * @return A new boxed instance of the object.
      */
-    static Ilk.Box needsIlkConstructor(Ilk.Key type, Type ilk, Ilk.Box...arguments) {
+    static Ilk.Box needsIlkConstructor(Ilk.Reflector reflector, Ilk.Key type, Type ilk, Ilk.Box...arguments) {
         try {
             Ilk.Box boxedIlk;
             if (ilk instanceof ParameterizedType) {
                 Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((ParameterizedType) ilk)){};
                 Ilk.Box pt = new Ilk<ParameterizedType>(ParameterizedType.class).box((ParameterizedType) ilk);
                 Constructor<?> newIlk = Ilk.class.getConstructor(ParameterizedType.class);
-                boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, pt);
+                boxedIlk = ilkIlk.key.newInstance(reflector, newIlk, pt);
             } else {
                 Ilk.Box boxedClass = new Ilk.Box((Class<?>) ilk);
                 Ilk<Ilk<?>> ilkIlk = new Ilk<Ilk<?>>(new Ilk.Key((Class<?>) ilk)){};
                 Constructor<?> newIlk = Ilk.class.getConstructor(Class.class);
-                boxedIlk = ilkIlk.key.newInstance(new Ilk.Reflect(), newIlk, boxedClass);
+                boxedIlk = ilkIlk.key.newInstance(reflector, newIlk, boxedClass);
             }
             Class<?>[] parameters = new Class<?>[arguments.length + 1];
             final Ilk.Box[] withIlkArguments = new Ilk.Box[arguments.length + 1];
@@ -356,14 +364,19 @@ public class Injector {
                 parameters[i + 1] = arguments[i].key.rawClass;
             }
             Constructor<?> newObject = type.rawClass.getConstructor(parameters);
-            return type.newInstance(new Ilk.Reflect() {
+            return type.newInstance(new Ilk.Reflector() {
                 public Object newInstance(Constructor<?> constructor, Object[] arguments)
                 throws InstantiationException, IllegalAccessException, InvocationTargetException {
                     return constructor.newInstance(arguments);
                 }
             }, newObject, withIlkArguments);
         } catch (Throwable e) {
-            throw new RuntimeException("Unlikely reflection exception: " + Reflective.encode(e), e);
+            // This is unlikely, it means some of the Ilk Inject classes are
+            // missing. Just in case it does occur, we make sure not to wrap it
+            // in an InjectException, because the caller will not know that this
+            // is a problem with the Ilk Inject library itself, not object graph
+            // or the objects in it.
+            throw new RuntimeException(_("Unlikely reflection exception.", e), e);
         }
     }
 }

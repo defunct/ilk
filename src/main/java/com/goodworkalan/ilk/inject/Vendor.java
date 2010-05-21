@@ -29,6 +29,8 @@ public abstract class Vendor<I> {
     protected final Class<? extends Annotation> qualifier;
     
     protected final Class<? extends Annotation> scope;
+    
+    protected final Ilk.Reflector reflector;
 
     /**
      * Create a vendor with the given super type token.
@@ -39,7 +41,7 @@ public abstract class Vendor<I> {
      * Check that the given annotation is a qualifier annotation, or if it is
      * null convert it into a hidden no-qualifier annotation.
      */
-    protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+    protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Reflector reflector) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
@@ -62,6 +64,7 @@ public abstract class Vendor<I> {
         this.ilk = ilk;
         this.qualifier = qualifier;
         this.scope = scope;
+        this.reflector = reflector == null ? Ilk.REFLECTOR : reflector;
     }
     
     protected abstract Ilk.Box get(Injector injector);
@@ -80,7 +83,7 @@ public abstract class Vendor<I> {
             Ilk.Box box = injector.getBoxOrLockScope(ilk.key, qualifier, scope);
             if (box == null) {
                 box = get(injector);
-                injector.addBoxToScope(ilk.key, qualifier, scope, box);
+                injector.addBoxToScope(ilk.key, qualifier, scope, box, reflector);
             }
             return box;
         } finally {
@@ -110,6 +113,6 @@ public abstract class Vendor<I> {
         Type type = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
         Ilk.Box boxedVendor = new Ilk<Vendor<I>>(ilk.key) {}.box(this);
         Ilk.Box boxedInjector = new Ilk<Injector>(Injector.class).box(injector);
-        return Injector.needsIlkConstructor(provider, type, boxedVendor, boxedInjector);
+        return Injector.needsIlkConstructor(Ilk.REFLECTOR, provider, type, boxedVendor, boxedInjector);
     }
 }
