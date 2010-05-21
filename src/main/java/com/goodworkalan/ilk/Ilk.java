@@ -13,6 +13,7 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
+import java.util.IllegalFormatException;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -152,6 +153,14 @@ public class Ilk<T> {
         return key.toString();
     }
 
+    public static String _(String message, Object... arguments) {
+        try {
+            return String.format(message, arguments);
+        } catch (IllegalFormatException e) {
+            return String.format("Format error message [%s] for format [%s] using arguments %s.", e.getMessage(), message, Arrays.asList(arguments));
+        }
+    }
+    
     /**
      * Decorator of a Java class that tests assignability of type parameters.
      * <p>
@@ -419,6 +428,10 @@ public class Ilk<T> {
                     if (types[i] instanceof TypeVariable<?>) {
                         actual[i] = getActualType(method, methodTypes, arguments[i], type, (TypeVariable<?>) types[i]);
                     } else if (types[i] instanceof WildcardType){
+                        // FIXME If I can split this out, then I'll be able to
+                        // remove WildcardType, and use this only
+                        // in reflection. Make Acutalizer a class that you can
+                        // derive from?
                         actual[i] = getActualType(method, methodTypes, arguments[i], (WildcardType) types[i]);
                     } else {
                         actual[i] = types[i];
@@ -546,7 +559,7 @@ public class Ilk<T> {
             }
             for (int i = 0; i < types.length; i++) {
                 if (boxes[i] != null && !keys[i].isAssignableFrom(boxes[i].key)) {
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException(_("Unable to assign [%s] from [%s].", keys[i], boxes[i].key));
                 }
             }
             Object[] objects = new Object[boxes.length];
@@ -732,8 +745,8 @@ public class Ilk<T> {
                 if (type instanceof Class<?>) { 
                     return true;
                 }
-                Type adjusted = getSuperType(key.type, rawClass);
-                return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted).getActualTypeArguments());
+                Ilk.Key adjusted = key.getSuperKey(rawClass);
+                return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted.type).getActualTypeArguments());
             }
             return false;
         }
