@@ -1,6 +1,6 @@
 <projectDescription>
-  <name>ilk</name>
-  <comment>Type tokens.</comment>
+  <name>ilk-reflect</name>
+  <comment>Reflection on type tokens.</comment>
   <projects/>
   <buildSpec>
     <buildCommand>

@@ -29,7 +29,7 @@ import java.util.Queue;
  * @param <T>
  *            The type to tokenize.
  */
-public class Ilk<T> {
+public class IlkReflect<T> {
     /** The super type token key. */
     public final Key key;
 
@@ -39,7 +39,7 @@ public class Ilk<T> {
      * @param keyClass
      *            The class.
      */
-    public Ilk(Class<? extends T> keyClass) {
+    public IlkReflect(Class<? extends T> keyClass) {
         this.key = new Key(keyClass);
     }
 
@@ -49,7 +49,7 @@ public class Ilk<T> {
      * @param parameterizedType
      *            The parameterized type.
      */
-    public Ilk(ParameterizedType parameterizedType) {
+    public IlkReflect(ParameterizedType parameterizedType) {
         this.key = new Key(parameterizedType);
     }
 
@@ -60,7 +60,7 @@ public class Ilk<T> {
      * This method is meant to be called from anonymous subclasses of
      * <code>Ilk</code>.
      */
-    protected Ilk(Ilk.Key...keys) {
+    protected IlkReflect(IlkReflect.Key...keys) {
         // Give me class information.
         Class<?> klass = getClass();
 
@@ -100,12 +100,12 @@ public class Ilk<T> {
         // We have one type argument in TypeRefence<T>: T.
         Type type = pt.getActualTypeArguments()[0];
         if (type instanceof ParameterizedType) {
-            key = new Ilk.Key((ParameterizedType) type, keys);  
+            key = new IlkReflect.Key((ParameterizedType) type, keys);  
         } else {
             if (keys.length != 0) {
                 throw new IllegalArgumentException();
             }
-            key = new Ilk.Key((Class<?>) type);
+            key = new IlkReflect.Key((Class<?>) type);
         }
     }
 
@@ -128,12 +128,12 @@ public class Ilk<T> {
      */
     static Key key(Type type, Key...keys) {
         if (type instanceof ParameterizedType) {
-            return new Ilk.Key((ParameterizedType) type, keys);  
+            return new IlkReflect.Key((ParameterizedType) type, keys);  
         }
         if (keys.length != 0) {
             throw new IllegalArgumentException();
         }
-        return new Ilk.Key((Class<?>) type);
+        return new IlkReflect.Key((Class<?>) type);
     }
 
     /**
@@ -479,7 +479,7 @@ public class Ilk<T> {
             return keys;
         }
         
-        public Ilk.Box newInstance(Reflector reflector)
+        public IlkReflect.Box newInstance(Reflector reflector)
         throws InstantiationException, IllegalAccessException {
             return new Box(this, reflector.newInstance(rawClass));
         }
@@ -507,12 +507,12 @@ public class Ilk<T> {
          *                If the number of parameters differ, of if the argument
          *                cannot be assigned to its parameter
          */
-        public Ilk.Box newInstance(Reflector reflector, Constructor<?> constructor, Ilk.Box...arguments)
+        public IlkReflect.Box newInstance(Reflector reflector, Constructor<?> constructor, IlkReflect.Box...arguments)
         throws InstantiationException, IllegalAccessException, InvocationTargetException { 
             return new Box(this, reflector.newInstance(constructor, objects(null, null, constructor.getGenericParameterTypes(), arguments)));
         }
         
-        public Ilk.Box invoke(Reflector reflector, Method method, Ilk.Box object, Ilk.Box...arguments)
+        public IlkReflect.Box invoke(Reflector reflector, Method method, IlkReflect.Box object, IlkReflect.Box...arguments)
         throws IllegalAccessException, InvocationTargetException {
             if (!isAssignableFrom(object.key)) {
                 throw new IllegalArgumentException();
@@ -522,7 +522,7 @@ public class Ilk<T> {
             return enbox(key(getActualType(method, methodTypes, null, method.getGenericReturnType())), reflector.invoke(method, object.object, objects));
         }
         
-        public void set(Reflector reflector, Field field, Ilk.Box object, Ilk.Box value)
+        public void set(Reflector reflector, Field field, IlkReflect.Box object, IlkReflect.Box value)
         throws IllegalAccessException {
             isAssignableFrom(object.key);
             getKey(field.getGenericType()).isAssignableFrom(value.key);
@@ -539,14 +539,14 @@ public class Ilk<T> {
          *            The object.
          * @return A box for the key and object or null if the object is null.
          */
-        Ilk.Box enbox(Key key, Object object) {
+        IlkReflect.Box enbox(Key key, Object object) {
             if (object == null) {
                 return null;
             }
             return new Box(key, object);
         }
 
-        public Ilk.Box get(Reflector reflector, Field field, Ilk.Box object)
+        public IlkReflect.Box get(Reflector reflector, Field field, IlkReflect.Box object)
         throws IllegalAccessException {
             isAssignableFrom(object.key);
             return enbox(getKey(field.getGenericType()), reflector.get(field, object.object));
@@ -745,7 +745,7 @@ public class Ilk<T> {
                 if (type instanceof Class<?>) { 
                     return true;
                 }
-                Ilk.Key adjusted = key.getSuperKey(rawClass);
+                IlkReflect.Key adjusted = key.getSuperKey(rawClass);
                 return evaluateWildcards(((ParameterizedType) type).getActualTypeArguments(), ((ParameterizedType) adjusted.type).getActualTypeArguments());
             }
             return false;
@@ -986,7 +986,7 @@ public class Ilk<T> {
          *                If the object is not of the given type.
          */
         public <C> C cast(Class<C> castClass) {
-            return cast(new Ilk<C>(castClass));
+            return cast(new IlkReflect<C>(castClass));
         }
 
         /**
@@ -1007,7 +1007,7 @@ public class Ilk<T> {
          *                If the object is not of the given type.
          */
         @SuppressWarnings("unchecked")
-        public <C> C cast(Ilk<C> ilk) {
+        public <C> C cast(IlkReflect<C> ilk) {
             if (ilk.key.isAssignableFrom(key)) {
                 return (C) object;
             }

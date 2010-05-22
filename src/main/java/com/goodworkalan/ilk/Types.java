@@ -3,7 +3,7 @@ package com.goodworkalan.ilk;
 import java.lang.reflect.Type;
 
 /**
- * Utility methods and nested classes to support the {@link Ilk} implementation.
+ * Utility methods and nested classes to support the {@link IlkReflect} implementation.
  * <p>
  * The nested implementation of {@link java.lang.reflect.ParameterizedType}
  * allows the reuse of the name (instead of adding "Impl"), while keeping
