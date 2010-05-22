@@ -78,6 +78,7 @@ public abstract class Vendor<I> {
      * @return An object instance boxed with its actual type information.
      */
     Ilk.Box instance(Injector injector) {
+        boolean success = false;
         injector.startInjection();
         try {
             Ilk.Box box = injector.getBoxOrLockScope(ilk.key, qualifier, scope);
@@ -85,9 +86,10 @@ public abstract class Vendor<I> {
                 box = get(injector);
                 injector.addBoxToScope(ilk.key, qualifier, scope, box, reflector);
             }
+            success = true;
             return box;
         } finally {
-            injector.endInjection();
+            injector.endInjection(success);
         }
     }
 

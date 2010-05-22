@@ -19,6 +19,6 @@ class ImplementationVendor<I> extends Vendor<I> {
 
     @Override
     protected Box get(Injector injector) {
-        return injector.newInstance(implementation);
+        return injector.newInstance(reflector, implementation);
     }
 }

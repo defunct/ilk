@@ -15,6 +15,6 @@ class ProviderVendor<I> extends Vendor<I> {
     }
 
     public Ilk.Box get(Injector injector) {
-        return ilk.box(injector.newInstance(provider.key).cast(provider).get());
+        return ilk.box(injector.newInstance(reflector, provider.key).cast(provider).get());
     }
 }

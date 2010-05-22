@@ -13,7 +13,6 @@ import javax.inject.Scope;
 import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
-import com.goodworkalan.ilk.association.IlkAssociation;
 
 /**
  * A builder for injectors.
@@ -38,7 +37,7 @@ public class InjectorBuilder {
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> builders = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor<?>>>();
+    private final Map<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>> builders = new HashMap<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>>();
     
     /** The scopes to create in the injector. */
     private final Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>>();
@@ -73,7 +72,7 @@ public class InjectorBuilder {
     InjectorBuilder(Injector parent) {
         this.parent = parent;
         scope(InjectorScoped.class);
-        builders.put(NoQualifier.class, new IlkAssociation<Vendor<?>>(false));
+        builders.put(NoQualifier.class, new HashMap<Ilk.Key, Vendor<?>>());
     }
 
     private final Map<Package, Ilk.Reflector> reflectors = new HashMap<Package, Ilk.Reflector>();
@@ -132,13 +131,13 @@ public class InjectorBuilder {
      *            The injector builder to copy.
      */
     public void consume(InjectorBuilder newInjector) {
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> entry : newInjector.builders.entrySet()) {
-            IlkAssociation<Vendor<?>> associations = this.builders.get(entry.getKey());
+        for (Map.Entry<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>> entry : newInjector.builders.entrySet()) {
+            Map<Ilk.Key, Vendor<?>> associations = this.builders.get(entry.getKey());
             if (associations == null) {
-                associations = new IlkAssociation<Vendor<?>>(false);
+                associations = new HashMap<Ilk.Key, Vendor<?>>();
                 this.builders.put(entry.getKey(), associations);
             }
-            associations.addAll(entry.getValue());
+            associations.putAll(entry.getValue());
         }
         for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> entry : newInjector.scopes.entrySet()) {
             ConcurrentMap<List<Object>, Ilk.Box> scope = this.scopes.get(entry.getKey());
@@ -151,12 +150,12 @@ public class InjectorBuilder {
     }
 
     public <I> Vendor<I> bind(Vendor<I> vendor) {
-        IlkAssociation<Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
+        Map<Ilk.Key, Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
         if (builderByIlk == null) {
-            builderByIlk = new IlkAssociation<Vendor<?>>(false);
+            builderByIlk = new HashMap<Ilk.Key, Vendor<?>>();
             builders.put(vendor.qualifier, builderByIlk);
         }
-        builderByIlk.assignable(vendor.ilk.key, vendor);
+        builderByIlk.put(vendor.ilk.key, vendor);
         return vendor;
     }
 

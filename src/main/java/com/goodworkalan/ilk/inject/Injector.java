@@ -25,7 +25,6 @@ import javax.inject.Qualifier;
 import javax.inject.Singleton;
 
 import com.goodworkalan.ilk.Ilk;
-import com.goodworkalan.ilk.association.IlkAssociation;
 
 /**
  * Create object graphs with dependency.
@@ -40,7 +39,7 @@ public class Injector {
     private final Injector parent;
 
     /** The map of types to instructions on how to provide them. */
-    private final Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> vendors;
+    private final Map<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>> vendors;
     
     /** The write lock on all scope containers in this injector. */  
     private final Lock scopeLock = new ReentrantLock();
@@ -66,19 +65,19 @@ public class Injector {
      * @param scopes
      *            The scopes collection.
      */
-    Injector(Injector parent, Map<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> builders, Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes) {
-        this.vendors = new HashMap<Class<? extends Annotation>, IlkAssociation<Vendor<?>>>();
+    Injector(Injector parent, Map<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>> builders, Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes) {
+        this.vendors = new HashMap<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>>();
         this.scopes = new HashMap<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>>();
         if (parent == null && !scopes.containsKey(Singleton.class)) {
             scopes.put(Singleton.class, new ConcurrentHashMap<List<Object>, Ilk.Box>());
         }
-        for (Map.Entry<Class<? extends Annotation>, IlkAssociation<Vendor<?>>> entry : builders.entrySet()) {
-            this.vendors.put(entry.getKey(), new IlkAssociation<Vendor<?>>(entry.getValue()));
+        for (Map.Entry<Class<? extends Annotation>, Map<Ilk.Key, Vendor<?>>> entry : builders.entrySet()) {
+            this.vendors.put(entry.getKey(), new HashMap<Ilk.Key, Vendor<?>>(entry.getValue()));
         }
         for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> entry : scopes.entrySet()) {
             this.scopes.put(entry.getKey(), new ConcurrentHashMap<List<Object>, Ilk.Box>(entry.getValue()));
         }
-        this.vendors.get(NoQualifier.class).assignable(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(InjectorBuilder.ilk(Injector.class), this, null));
+        this.vendors.get(NoQualifier.class).put(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(InjectorBuilder.ilk(Injector.class), this, null));
         this.parent = parent;
     }
     
@@ -106,20 +105,17 @@ public class Injector {
         return provider(ilk.key, qualifier).cast(new Ilk<Provider<T>>(ilk.key) {});
     }
     
-    public Ilk.Box inject(Ilk.Reflector reflector, Ilk.Box box, Method method) {
-        try {
+    public Ilk.Box inject(Ilk.Reflector reflector, Ilk.Box box, Method method)
+    throws IllegalAccessException, InvocationTargetException {
+//        try {
             return box.key.invoke(reflector, method, box, arguments(box.key, method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
-        } catch (Throwable e) {
-            throw new InjectException(_("Unable to inject method [%s] in class [%s].", e, method.getName(), box.key.rawClass), e);
-        }
+//        } catch (Throwable e) {
+//            throw new InjectException(_("Unable to inject method [%s] in class [%s].", e, method.getName(), box.key.rawClass), e);
+//        }
     }
     
-    public void inject(Ilk.Reflector reflector, Ilk.Box box, Field field) {
-        try {
-            box.key.set(reflector, field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
-        } catch (Throwable e) {
-            throw new InjectException(_("Unable to inject field [%s] in class [%s].", e, field.getName(), box.key.rawClass), e);
-        }
+    public void inject(Ilk.Reflector reflector, Ilk.Box box, Field field) throws IllegalAccessException {
+        box.key.set(reflector, field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
     }
     
     Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
@@ -135,45 +131,56 @@ public class Injector {
     }
 
     /** FIXME Perfect example of no need to test twice, null injector. */
-    void endInjection() {
+    void endInjection(boolean success) {
         Injection injection = INJECTION.get();
         if (--injection.injectionDepth == 0 && !injection.setting) {
             injection.setting = true;
-            while (!injection.unset.isEmpty()) {
-                Ilk.Box box = injection.unset.remove();
-                Ilk.Reflector reflector = injection.reflectors.remove();
-                for (Method method : box.key.rawClass.getMethods()) {
-                    if (null != method.getAnnotation(Inject.class)) {
-                        inject(reflector, box, method);
-                        break;
+            try {
+                if (success) {
+                    while (!injection.unset.isEmpty()) {
+                        Ilk.Box box = injection.unset.remove();
+                        Ilk.Reflector reflector = injection.reflectors.remove();
+                        for (Method method : box.key.rawClass.getMethods()) {
+                            if (null != method.getAnnotation(Inject.class)) {
+                                try {
+                                    inject(reflector, box, method);
+                                } catch (Throwable e) {
+                                    throw new InjectException(_("Unable to inject method [%s] in class [%s].", e, method.getName(), box.key.rawClass), e);
+                                }
+                            }
+                        }
+                        for (Field field : box.key.rawClass.getFields()) {
+                            if (null != field.getAnnotation(Inject.class)) {
+                                try {
+                                    inject(reflector, box, field);
+                                } catch (Throwable e) {
+                                    throw new InjectException(_("Unable to inject field [%s] in class [%s].", e, field.getName(), box.key.rawClass), e);
+                                }
+                            }
+                        }
+                    }
+                    for (Map.Entry<Class<? extends Annotation>, Map<List<Object>, Ilk.Box>> entry : injection.scopes.entrySet()) {
+                        Class<? extends Annotation> scope = entry.getKey();
+                        Injector injector = this;
+                        while (!injector.scopes.containsKey(scope)) {
+                            injector = injector.parent;
+                        }
+                        injector.scopes.get(scope).putAll(entry.getValue());
                     }
                 }
-                for (Field field : box.key.rawClass.getFields()) {
-                    if (null != field.getAnnotation(Inject.class)) {
-                        inject(reflector, box, field);
-                        break;
-                    }
-                }
-            }
-            for (Map.Entry<Class<? extends Annotation>, Map<List<Object>, Ilk.Box>> entry : injection.scopes.entrySet()) {
-                Class<? extends Annotation> scope = entry.getKey();
+            } finally {
                 Injector injector = this;
-                while (!injector.scopes.containsKey(scope)) {
+                for (int i = 0; i < injection.lockHeight; i++) {
+                    injector.scopeLock.unlock();
                     injector = injector.parent;
                 }
-                injector.scopes.get(scope).putAll(entry.getValue());
+                INJECTION.remove();
             }
-            Injector injector = this;
-            for (int i = 0; i < injection.lockHeight; i++) {
-                injector.scopeLock.unlock();
-                injector = injector.parent;
-            }
-            INJECTION.remove();
         }
     }
 
     private Vendor<?> getStipulatedVendor(Ilk.Key key, Class<? extends Annotation> qualifier) {
-        IlkAssociation<Vendor<?>> stipulationByIlk = vendors.get(qualifier);
+        Map<Ilk.Key, Vendor<?>> stipulationByIlk = vendors.get(qualifier);
         if (stipulationByIlk != null) {
             Vendor<?> vendor = stipulationByIlk.get(key);
             if (vendor != null) {
@@ -236,7 +243,7 @@ public class Injector {
                 Ilk.Key key = keys[i];
                 Ilk.Box box = instance(new Ilk.Key(keys[i].getKeys(keys[i].rawClass.getTypeParameters())[0]), qualifierClass);
                 try {
-                    arguments[i] = key.newInstance(Ilk.REFLECTOR, Boxed.class.getConstructor(Ilk.Box.class), box);
+                    arguments[i] = key.newInstance(Ilk.REFLECTOR, Boxed.class.getConstructor(Ilk.Box.class), new Ilk<Ilk.Box>(Ilk.Box.class).box(box));
                 } catch (Throwable e) {
                     // This is unlikely, it means some of the Boxed class is
                     // missing or corrupt. Just in case it does occur, we make
@@ -282,9 +289,9 @@ public class Injector {
                     }
                     unlocked = unlocked.parent;
                 }
+                // Try again after locking, but hold our locks just the same.
+                box = injection.scopes.get(scope).get(qualifedType);
             }
-            // Try again after locking, but hold our locks just the same.
-            box = injection.scopes.get(scope).get(qualifedType);
         }
         return box;
     }
@@ -294,11 +301,14 @@ public class Injector {
         injection.unset.offer(box);
         injection.reflectors.offer(reflector);
         if (!scope.equals(NoScope.class)) {
+            if (injection.scopes.get(scope).containsKey(Arrays.<Object>asList(key, qualifier))) {
+                throw new IllegalStateException("Not expecting this state, implies an object that takes itself as a constructor argument.");
+            }
             injection.scopes.get(scope).put(Arrays.<Object>asList(key, qualifier), box);
         }
     }
     
-    Ilk.Box newInstance(Ilk.Key type) {
+    Ilk.Box newInstance(Ilk.Reflector reflector, Ilk.Key type) {
         Constructor<?> injectable = null;
         Constructor<?> noArgument = null;
         for (java.lang.reflect.Constructor<?> constructor : type.rawClass.getConstructors()) {
@@ -319,7 +329,7 @@ public class Injector {
             throw new InjectException(_("No injectable constructor found for [%s].", null, type.rawClass), null);
         }
         try {
-            return type.newInstance(Ilk.REFLECTOR, injectable, arguments(type, injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable.getGenericParameterTypes()));
+            return type.newInstance(reflector, injectable, arguments(type, injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable.getGenericParameterTypes()));
         } catch (Throwable e) {
             throw new InjectException(_("Unable to create new instance of [%s].", e, type.rawClass), e);
         }
