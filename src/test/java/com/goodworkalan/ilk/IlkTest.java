@@ -2,11 +2,12 @@ package com.goodworkalan.ilk;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,7 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.testng.annotations.Test;
 
@@ -34,7 +34,7 @@ public class IlkTest {
     }
 
     /** Test failed construction. */
-    @Test(expectedExceptions = IllegalStateException.class)
+    @Test(expectedExceptions = ClassCastException.class)
     public void tooGeneric() {
         new Ilk<List<String>>();
     }
@@ -46,12 +46,12 @@ public class IlkTest {
         assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
     }
     
-    /** Test copy constructor. */
-    @Test
-    public void copy() {
-        Ilk.Key key = new Ilk.Key(new Ilk<List<String>>() {}.key);
-        assertEquals(key.toString(),  "java.util.List<java.lang.String>");
-    }
+//    /** Test copy constructor. */
+//    @Test
+//    public void copy() {
+//        Ilk.Key key = new Ilk.Key(new Ilk<List<String>>() {}.key);
+//        assertEquals(key.toString(),  "java.util.List<java.lang.String>");
+//    }
     
     /** Test quality. */
     @Test
@@ -66,10 +66,21 @@ public class IlkTest {
         assertEquals(listString, listString);
         assertFalse(listString.equals(new Ilk<List<Integer>>(){}.key));
         ParameterizedType pt = (ParameterizedType) listString.type;
-        assertEquals(listString, new Ilk.Key(new Types.ParameterizedType(pt, pt.getActualTypeArguments())));
+        assertEquals(listString, new Ilk.Key(new Types.Parameterized(pt.getRawType(), pt.getOwnerType(), pt.getActualTypeArguments())));
         assertFalse(listString.equals(new Ilk<Collection<String>>() { }.key));
         assertFalse(new Ilk<Three<String>.Four<Integer>>() { }.key.equals(new Ilk<Three<Integer>.Four<Integer>>() { }.key));
         assertFalse(listString.equals(null));
+    }
+    
+    @Test
+    public void actualTypes() throws Exception {
+        Ilk.Key key = new Ilk<TreeMap<String, List<Integer>>>() { }.key;
+        Type actualMapType = Types.getActualType(Map.class, key.type);
+        Method put = Types.getRawClass(actualMapType).getMethod("put", Object.class, Object.class);
+        Type[] generics = put.getGenericParameterTypes();
+        for (int i = 0; i < generics.length; i++) {
+            System.out.println(Types.getActualType(generics[i], key.type));
+        }
     }
 
     /** Test hash code. */
@@ -81,26 +92,64 @@ public class IlkTest {
         assertEquals((int) map.get(key), 1);
     }
     
+    public Ilk.Key getSuperKey(Ilk.Key key, Class<?> keyClass) {
+      return new Ilk.Key(Types.getActualType(keyClass, key.type));
+  }
+
+    @Test
+    public void boxAClass() {
+        Ilk.Box box = new Ilk.Box(new Ilk<Class<Object>>() {});
+        assertTrue(box.key.type instanceof ParameterizedType);
+    }
+    
+    @Test
+    public void ilkBox() {
+        Ilk.Box box = new Ilk<List<String>>() {}.box();
+        Ilk<List<String>> unboxed = box.cast(new Ilk<Ilk<List<String>>>() {});
+        System.out.println(unboxed);
+    }
+    
+    @Test <T> void ilkFromKey() {
+        Ilk.Box box = new Ilk<List<T>>() {}.assign(new Ilk<T>() {}, String.class).box();
+        Ilk<List<String>> ilkString = box.cast(new Ilk<Ilk<List<String>>>() {});
+        System.out.println(ilkString);
+    }
+    
+    @Test
+    public  void assign() {
+        Ilk.Box box = assignMap(new Ilk<Integer>(Integer.class), new Ilk<String>(String.class), new ArrayList<Map<Integer, String>>());
+        List<Map<Integer, String>> listMap = box.cast(new Ilk<List<Map<Integer, String>>>() {});
+        System.out.println(listMap);
+    }
+    
+    public <K, V> Ilk.Box assignMap(Ilk<K> k, Ilk<V> v, List<Map<K, V>> unboxed) {
+        Ilk<List<Map<K, V>>> listMap = new Ilk<List<Map<K,V>>>(){};
+        System.out.println(listMap);
+        Ilk<List<Map<K, V>>> assignK = listMap.assign(new Ilk<Ilk<K>>() {}, k);
+        Ilk<List<Map<K, V>>> assignV = assignK.assign(new Ilk<Ilk<V>>() {}, v);
+        return assignV.box(unboxed);
+    }
+    
     /** Test super key. */
     @Test
     public void getSuperKey() {
         Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
-        Ilk.Key mapKey = ilk.key.getSuperKey(SortedMap.class);
+        Ilk.Key mapKey = getSuperKey(ilk.key, SortedMap.class);
         assertEquals(mapKey.toString(), "java.util.SortedMap<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
-        mapKey = mapKey.getSuperKey(Map.class);
+        mapKey = getSuperKey(mapKey, Map.class);
         assertEquals(mapKey.toString(), "java.util.Map<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
-        assertEquals(ilk.key.getSuperKey(Serializable.class).toString(), "java.io.Serializable");
-        assertEquals(ilk.key.getSuperKey(Object.class).toString(), "java.lang.Object");
-        assertEquals(ilk.key.getSuperKey(TreeMap.class).toString(), "java.util.TreeMap<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
+        assertEquals(getSuperKey(ilk.key, Serializable.class).toString(), "java.io.Serializable");
+        assertEquals(getSuperKey(ilk.key, Object.class).toString(), "java.lang.Object");
+        assertEquals(getSuperKey(ilk.key, TreeMap.class).toString(), "java.util.TreeMap<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
         Ilk.Key collectable = new Ilk<Collectable>() { }.key;
-        assertEquals(collectable.getSuperKey(Collection.class).toString(), "java.util.Collection<java.lang.Integer>");
+        assertEquals(getSuperKey(collectable, Collection.class).toString(), "java.util.Collection<java.lang.Integer>");
     }
     
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void badSuperKey() {
-        Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
-        assertNull(ilk.key.getSuperKey(Number.class));
-    }
+//    @Test(expectedExceptions = IllegalArgumentException.class)
+//    public void badSuperKey() {
+//        Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
+//        assertNull(getSuperKey(ilk.key, Number.class));
+//    }
 
     /** Test is assignable from. */
     @Test
@@ -136,7 +185,7 @@ public class IlkTest {
         Ilk.Key arrayListArrayListSuperListString = new Ilk<ArrayList<ArrayList<? super List<String>>>>() {}.key;
         
         // Test wildcards.
-        // List<? extends List<? super List<String>>> list = new ArrayList<ArrayList<? super List<String>>>();
+//         List<? extends List<? super List<String>>> list = new ArrayList<ArrayList<? super List<String>>>();
         
         assertTrue(listExtendsListSuperListString.isAssignableFrom(arrayListArrayListSuperListString));
         Ilk.Key arrayListArrayListListString = new Ilk<ArrayList<ArrayList<List<String>>>>() {}.key;
@@ -147,47 +196,13 @@ public class IlkTest {
         Ilk.Key arrayListArrayListExtendsSetString = new Ilk<ArrayList<ArrayList<? extends Set<String>>>>() {}.key;
         Ilk.Key arrayListArrayListExtendsListString = new Ilk<ArrayList<ArrayList<? extends List<String>>>>() {}.key;
         assertFalse(arrayListArrayListExtendsListString.isAssignableFrom(arrayListArrayListExtendsSetString));
-    }
-    
-    /** Test key ordering. */
-    @Test
-    public void sort() {
-        Ilk.Key string = new Ilk<String>() { }.key;
-        Ilk.Key number = new Ilk<Number>() { }.key;
-        Ilk.Key integer = new Ilk<Integer>() { }.key;
-        Ilk.Key listString = new Ilk<List<String>>() { }.key;
-        Ilk.Key arrayListString = new Ilk<ArrayList<String>>() { }.key;
-        Ilk.Key listMapStringInteger = new Ilk<List<Map<String, Integer>>>() { }.key;
-        Ilk.Key listTreeMapStringInteger = new Ilk<List<TreeMap<String, Integer>>>() { }.key;
-        Ilk.Key listExtendsNumber = new Ilk<List<? extends Number>>() { }.key;
-        Ilk.Key listInteger = new Ilk<List<Integer>>() { }.key;
-        Ilk.Key listLong = new Ilk<List<Long>>() { }.key;
-        assertTrue(string.compareTo(string) == 0);
-        assertTrue(string.compareTo(number) > 0);
-        assertTrue(number.compareTo(integer) > 0);
-        assertTrue(integer.compareTo(number) < 0);
-        Set<Ilk.Key> keys = new TreeSet<Ilk.Key>();
-        keys.add(string);
-        keys.add(number);
-        keys.add(integer);
-        keys.add(listString);
-        keys.add(arrayListString);
-        keys.add(listMapStringInteger);
-        keys.add(listTreeMapStringInteger);
-        keys.add(listExtendsNumber);
-        keys.add(listInteger);
-        for (Ilk.Key candidate : keys) {
-            if (candidate.isAssignableFrom(arrayListString)) {
-                assertEquals(candidate, arrayListString);
-                break;
-            }
-        }
-        for (Ilk.Key candidate : keys) {
-            if (candidate.isAssignableFrom(listLong)) {
-                assertEquals(candidate, listExtendsNumber);
-                break;
-            }
-        }
+        
+        Ilk.Key superWildExtendsString = new Ilk<SuperWild<? extends String>>() {}.key;
+        Ilk.Key superWildString = new Ilk<SuperWild<String>>() {}.key;
+//        
+//        // SuperWild<? extends String> sw = new SuperWild<String>();
+        assertTrue(superWildExtendsString.isAssignableFrom(superWildString));
+        assertFalse(superWildString.isAssignableFrom(superWildExtendsString));
     }
     
     /** Test box. */
@@ -211,39 +226,11 @@ public class IlkTest {
         box.cast(Integer.class);
     }
 
-    /** Test type variable replacement. */
-    @Test
-    public void replacement() {
-        Ilk<Map<String, Integer>> map = replace(new Ilk<String>() { });
-        Ilk.Box box = map.box(new HashMap<String, Integer>());
-        box.cast(new Ilk<Map<String, Integer>>() { });
-    }
-
-    /** Test variables with bounds. */
-    private <T extends CharSequence & Serializable> Ilk<Map<T, Integer>> replace(Ilk<T> ilk) {
-        return new Ilk<Map<T, Integer>>(ilk.key) { };
-    }
-    
-    /** Test key replacement. */
-    @Test
-    public void keyReplace() {
-        Ilk.Key string = new Ilk<String>() {}.key;
-        Ilk.Key bar = new Ilk<Bar<?>>() { }.key;
-        new Ilk.Key((ParameterizedType) bar.type, string);
-    }
-    
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void badKeyReplace() {
-        Ilk.Key integer = new Ilk<Integer>() {}.key;
-        Ilk.Key bar = new Ilk<Bar<?>>() { }.key;
-        new Ilk.Key((ParameterizedType) bar.type, integer);
-    }
-    
-    @Test
-    public void classBox() {
-        Ilk<Class<Integer>> classIlk = new Ilk<Class<Integer>>() { };
-        Ilk.Box classBox = new Ilk.Box(new Integer(0).getClass());
-        Class<Integer> intClass = classBox.cast(classIlk);
-        assertEquals(intClass, Integer.class);
-    }
+//    @Test
+//    public void classBox() {
+//        Ilk<Class<Integer>> classIlk = new Ilk<Class<Integer>>() { };
+//        Ilk.Box classBox = new Ilk.Box(new Integer(0).getClass());
+//        Class<Integer> intClass = classBox.cast(classIlk);
+//        assertEquals(intClass, Integer.class);
+//    }
 }
