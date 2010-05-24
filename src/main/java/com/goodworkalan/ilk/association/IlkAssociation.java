@@ -1,8 +1,11 @@
 package com.goodworkalan.ilk.association;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,7 +16,10 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.Types;
 import com.goodworkalan.ilk.Ilk.Key;
+
+import static com.goodworkalan.ilk.Types.getRawClass;
 
 /**
  * Associates a value to a type by either matching the a given super type token
@@ -113,7 +119,7 @@ public class IlkAssociation<T> {
     private void addAll(Map<Class<?>, Map<Ilk.Key, List<T>>> dest, Map<Class<?>, Map<Ilk.Key, List<T>>> source) {
         for (Map<Ilk.Key, List<T>> ilks : source.values()) {
             for (Ilk.Key key : ilks.keySet()) {
-                dest.put(key.rawClass, add(dest, key, ilks.get(key)));
+                dest.put(getRawClass(key.type), add(dest, key, ilks.get(key)));
             }
         }
     }
@@ -146,7 +152,7 @@ public class IlkAssociation<T> {
      */
     public synchronized void exact(Ilk.Key key, T value) {
         Map<Ilk.Key, List<T>> pairs = add(exact, key, Collections.singletonList(value));
-        exact.put(key.rawClass, pairs);
+        exact.put(getRawClass(key.type), pairs);
         cache.clear();
     }
 
@@ -166,7 +172,7 @@ public class IlkAssociation<T> {
      *         associated with the key.
      */
     private Map<Ilk.Key, List<T>> add(Map<Class<?>, Map<Ilk.Key, List<T>>> map, Ilk.Key key, List<T> values) {
-        Map<Ilk.Key, List<T>> pairs = copy(key.rawClass, map);
+        Map<Ilk.Key, List<T>> pairs = copy(getRawClass(key.type), map);
         for (Map.Entry<Ilk.Key, List<T>> pair : pairs.entrySet()) {
             if (pair.getKey().equals(key)) {
                 if (multi) {
@@ -195,7 +201,7 @@ public class IlkAssociation<T> {
      *         key.
      */
     private Map<Ilk.Key, List<T>> copy(Class<?> rawClass, Map<Class<?>, Map<Ilk.Key, List<T>>> map) {
-        Map<Ilk.Key, List<T>> copy = new TreeMap<Key, List<T>>();
+        Map<Ilk.Key, List<T>> copy = new HashMap<Ilk.Key, List<T>>();
         Map<Ilk.Key, List<T>> pairs = map.get(rawClass);
         if (pairs != null) {
             for (Map.Entry<Ilk.Key, List<T>> pair : pairs.entrySet()) {
@@ -235,7 +241,7 @@ public class IlkAssociation<T> {
      */
     public synchronized void assignable(Ilk.Key key, T value) {
         Map<Ilk.Key, List<T>> pairs = add(assignable, key, Collections.singletonList(value));
-        assignable.put(key.rawClass, pairs);
+        assignable.put(getRawClass(key.type), pairs);
         cache.clear();
     }
 
@@ -292,7 +298,7 @@ public class IlkAssociation<T> {
 //            if (type.isPrimitive()) {
 //                throw new IllegalArgumentException();
 //            }
-            Map<Ilk.Key, List<T>> pairs = exact.get(key.rawClass);
+            Map<Ilk.Key, List<T>> pairs = exact.get(getRawClass(key.type));
             if (pairs != null) {
                 for (Map.Entry<Ilk.Key, List<T>> pair : pairs.entrySet()) {
                     if (pair.getKey().equals(key)) {
@@ -301,7 +307,7 @@ public class IlkAssociation<T> {
                     }
                 }
             }
-            for (Annotation annotation : key.rawClass.getAnnotations()) {
+            for (Annotation annotation : getRawClass(key.type).getAnnotations()) {
                 // Get to shrink the code a few bytes when I use annotatedType().
                 for (Map.Entry<Class<? extends Annotation>, List<T>> entry : annotated.entrySet()) {
                     if (entry.getKey().isAssignableFrom(annotation.getClass())) {
@@ -309,29 +315,43 @@ public class IlkAssociation<T> {
                     }
                 }
             }
-            Set<Key> seen = new HashSet<Key>();
-            Class<?> iterator = key.rawClass;
+            Set<Type> seen = new HashSet<Type>();
+            Type iterator = key.type;
             while (iterator != null) {
-                LinkedList<Key> interfaces = new LinkedList<Key>();
-                interfaces.add(key.getSuperKey(iterator));
+                LinkedList<Type> interfaces = new LinkedList<Type>();
+                interfaces.add(iterator);
                 while (!interfaces.isEmpty()) {
-                    Key iface = interfaces.removeFirst();
-                    if (!seen.contains(iface)) {
-                        seen.add(iface);
-                        pairs = assignable.get(iface.rawClass);
+                    Type iface = interfaces.removeFirst();
+                    if (!seen.contains(getRawClass(iface))) {
+                        seen.add(getRawClass(iface));
+                        pairs = assignable.get(getRawClass(iface));
                         if (pairs != null) {
                             for (Map.Entry<Ilk.Key, List<T>> pair : pairs.entrySet()) {
-                                if (pair.getKey().isAssignableFrom(key)) {
-                                    values.addAll(pair.getValue());
+                                TreeMap<Ilk.Key, List<T>> sorted = new TreeMap<Key, List<T>>(new Comparator<Ilk.Key>() {
+                                    public int compare(Key o1, Key o2) {
+                                        if (o1.isAssignableFrom(o2)) {
+                                            return -1;
+                                        }
+                                        if (o2.isAssignableFrom(o1)) {
+                                            return 1;
+                                        }
+                                        throw new IllegalStateException();
+                                    }
+                                });
+                                if (pair.getKey().isAssignableFrom(new Ilk.Key(Types.getActualType(getRawClass(iface), key.type)))) {
+                                    sorted.put(pair.getKey(), pair.getValue());
+                                }
+                                for (List<T> found : sorted.values()) {
+                                    values.addAll(found);
                                 }
                             }
                         }
-                        for (Class<?> ifaceClass : iface.rawClass.getInterfaces()) {
-                            interfaces.add(key.getSuperKey(ifaceClass));
+                        for (Type ifaceIFace : getRawClass(iface).getInterfaces()) {
+                            interfaces.add(ifaceIFace);
                         }
                     }
                 }
-                iterator = iterator.getSuperclass();
+                iterator = getRawClass(iterator).getSuperclass();
             }
 
             cache.put(key, values);
