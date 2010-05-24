@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-  <classpathentry kind="src" path="src/main/java"/>
-  <classpathentry kind="src" output="target/test-classes" path="src/test/java"/>
-  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-  <classpathentry kind="output" path="target/classes"/>
-  <classpathentry kind="var" path="M2_REPO/org/testng/testng-jdk15/5.10/testng-jdk15-5.10.jar"/>
-  <classpathentry kind="var" path="M2_REPO/com/github/bigeasy/ilk/ilk/0.1.0.2/ilk-0.1.0.2.jar" sourcepath="M2_REPO/com/github/bigeasy/ilk/ilk/0.1.0.2/ilk-0.1.0.2-sources.jar">
-    <attributes>
-      <attribute name="javadoc_location" value="jar:file:/Users/alan/.m2/repository/com/github/bigeasy/ilk/ilk/0.1.0.2/ilk-0.1.0.2-javadoc.jar!/"/>
-    </attributes>
-  </classpathentry>
-  <classpathentry kind="var" path="M2_REPO/junit/junit/3.8.1/junit-3.8.1.jar" sourcepath="M2_REPO/junit/junit/3.8.1/junit-3.8.1-sources.jar"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="M2_REPO/org/testng/testng-jdk15/5.10/testng-jdk15-5.10.jar"/>
+	<classpathentry kind="var" path="M2_REPO/com/google/inject/guice/2.0/guice-2.0.jar" sourcepath="M2_REPO/com/google/inject/guice/2.0/guice-2.0-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/3.8.1/junit-3.8.1.jar" sourcepath="M2_REPO/junit/junit/3.8.1/junit-3.8.1-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/aopalliance/aopalliance/1.0/aopalliance-1.0.jar" sourcepath="M2_REPO/aopalliance/aopalliance/1.0/aopalliance-1.0-sources.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/ilk"/>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>
