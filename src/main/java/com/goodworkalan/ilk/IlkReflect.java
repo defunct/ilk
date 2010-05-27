@@ -114,14 +114,14 @@ public class IlkReflect {
         Map<TypeVariable<?>, Type> assignments = new HashMap<TypeVariable<?>, Type>();
         for (int i = 0; i < parameters.length; i++) {
             getTypeParameters(method, assignments, parameters[i], arguments[i].key.type);
-            Type actual = Types.getActualType(parameters[i], parameters[i]);
+            Type actual = Types.getActualType(parameters[i], object.key.type);
             actual = Types.getActualType(actual, assignments);
             if (!Types.isAssignableFrom(actual, arguments[i].key.type)) {
                 throw new IllegalArgumentException(format("Cannot assign [%s] from [%s].", parameters[i], arguments[i].key.type));
             }
         }
         Object result = reflector.invoke(method, object.object, objects(arguments));
-        Type actual = Types.getActualType(method.getGenericReturnType(), method.getGenericReturnType());
+        Type actual = Types.getActualType(method.getGenericReturnType(), object.key.type);
         actual = Types.getActualType(actual, assignments);
         return enbox(new Ilk.Key(actual), result);
     }
@@ -129,7 +129,8 @@ public class IlkReflect {
     public static void set(Reflector reflector, Field field, Ilk.Box object, Ilk.Box value)
     throws IllegalAccessException {
         checkAssignable(field.getDeclaringClass(), getRawClass(object.key.type));
-        if (!Types.isAssignableFrom(field.getGenericType(), object.key.type)) {
+        Type actual = Types.getActualType(field.getGenericType(), object.key.type);
+        if (!Types.isAssignableFrom(actual, value.key.type)) {
             throw new IllegalArgumentException(String.format("Cannot assign [%s] from [%s] in [%s].", field.getGenericType(), object.key, field.getDeclaringClass()));
         }
         reflector.set(field, object.object, value.object);

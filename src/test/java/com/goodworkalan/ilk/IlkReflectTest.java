@@ -8,11 +8,12 @@ public class IlkReflectTest {
     @Test
     public void testMethodParameters() throws Exception {
         IlkReflect.Reflector reflector = new IlkReflect.Reflector();
-        IlkReflect.invoke(reflector,IlkReflectTest.class.getMethod("actualize", Ilk.class), new Ilk<IlkReflect>(IlkReflectTest.class).box(null), new Ilk<Ilk<Integer>>(){}.box(new Ilk<Integer>() {}));
+        IlkReflect.invoke(reflector,IlkReflectTest.class.getMethod("actualize", Ilk.class), new Ilk<IlkReflect>(IlkReflectTest.class).box(null), new Ilk<Integer>(){}.box());
+//        box.cast(new Ilk<Ilk<List<List<? extends Integer>>>>() {});
     }
     
     public static <T> Ilk<List<List<? extends T>>> actualize(Ilk<T> ilk) {
-        return new Ilk<List<List<? extends T>>>();
+        return new Ilk<List<List<? extends T>>>(){}.assign(new Ilk<Ilk<T>>() {}, ilk);
     }
 
     @Test
