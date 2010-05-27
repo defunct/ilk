@@ -398,7 +398,7 @@ public class Injector {
             Class<?>[] parameters = new Class<?>[arguments.length + 1];
             final Ilk.Box[] withIlkArguments = new Ilk.Box[arguments.length + 1];
 
-            withIlkArguments[0] = new Ilk<Ilk<T>>(){}.assign(new Ilk<T>() {}, key.type).box();
+            withIlkArguments[0] = new Ilk<T>(){}.assign(new Ilk<T>() {}, unwrapped).box();
             parameters[0] = Ilk.class;
             
             for (int i = 0; i < arguments.length; i++) {
