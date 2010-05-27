@@ -24,7 +24,8 @@ public class Ilk<T> {
     public final Key key;
 
     /**
-     * Create a super type token for the given class.
+     * Create a super type token for the given class represnting a type that is
+     * not generic..
      * 
      * @param keyClass
      *            The class.
@@ -32,14 +33,63 @@ public class Ilk<T> {
     public Ilk(Class<? extends T> keyClass) {
         this.key = new Key(keyClass);
     }
-    
+
+    /**
+     * Create a new <code>Ilk</code> with a type variable assigned using the
+     * given <code>Ilk</code>.
+     * <p>
+     * This method will assign a type contained in an <code>Ilk</code> type
+     * using the given <code>ilk</code> that is itself described by the
+     * <code>Ilk</code> given by <cdoe>ilkIlk</code>. The value of
+     * 
+     * <pre>
+     * &lt;code&gt;
+     * public &lt;T&gt; Ilk&lt;List&lt;T&gt;&gt; asList(Ilk&lt;T&gt; ilk) {
+     *     return new Ilk&lt;List&lt;T&gt;&gt;(){}.assign(new Ilk&lt;Ilk&lt;T&gt;&gt;() {}, ilk);
+     * }
+     * 
+     * public void example() {
+     *     List&lt;Set&lt;String&gt;&gt; list = asList(new Ilk&lt;Set&lt;String&gt;&gt;() {});
+     * }
+     * &lt;/code&gt;
+     * </pre>
+     * 
+     * This method will create new <code>Ilk</code> and is useful for creating
+     * new type compositions in a type-safe manor.
+     * 
+     * @param <V>
+     *            The type to assign.
+     * @param ilkIlk
+     *            An <code>Ilk</code> that describes the <code>Ilk</code> whose
+     *            contained type will be used for the assignment.
+     * @param ilk
+     *            An <code>Ilk</code>
+     * @return An <code>Ilk</code> with the type contained by the given
+     *         <code>Ilk</code> assigned to every instance of the type variable
+     *         used to represent the type parameter of the contained type.
+     * @exception IllegalArgumentException
+     *                If the contained type in the descriptive <code>Ilk</code>
+     *                <code>ilkIlk</code> representing the type variable
+     *                <code>V</code> it not itself a type variable.
+     */
     public <V> Ilk<T> assign(Ilk<Ilk<V>> ilkIlk, Ilk<V> ilk) {
+        if (!(ilkIlk.key.type instanceof TypeVariable<?>)) {
+            throw new IllegalArgumentException();
+        }
         Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
         types.put((TypeVariable<?>) (((ParameterizedType)ilkIlk.key.type).getActualTypeArguments()[0]), ilk.key.type);
         Type assigned = Types.getActualType(key.type, types);
         return new Ilk<T>(assigned);
     }
     
+    /**
+     * Create a new <code>Ilk</code> by assigning the type variable represented
+     * by the given <code>ilk</code> with the given <code>type</code>. THe gi 
+     * @param <V>
+     * @param typeVariable
+     * @param type
+     * @return
+     */
     public <V> Ilk<T> assign(Ilk<V> typeVariable, Type type) {
         Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
         types.put((TypeVariable<?>) typeVariable.key.type, type);
@@ -81,28 +131,28 @@ public class Ilk<T> {
         // getGenericSuperclass() instead of getSuperclass().  
         Type superClass = klass.getGenericSuperclass();  
        
-//        if (superClass instanceof Class<?>) {
-//            // Type has four subinterface:  
-//            // (1) GenericArrayType: component type is either a  
-//            // parameterized type or a type variable. Parameterized type is a class  
-//            // or interface with its actual type argument, e.g., ArrayList<String>.  
-//            // Type variable is unqualified identifier like T or V.  
-//            //  
-//            // (2) ParameterizedType: see (1).  
-//            //  
-//            // (3) TypeVariable<D>: see (1).  
-//            //  
-//            // (4) WildcardType: ?  
-//            //  
-//            // and one subclass:  
-//            // (5) Class.  
-//            //  
-//            // If TypeReference is created by 'new TypeReference() { }', then  
-//            // superClass would be just an instance of Class instead of one of the  
-//            // interfaces described above. In that case, because I don't have type  
-//            // passed to TypeReference, an exception should be raised.  
-//            throw new IllegalStateException("Missing Type Parameter");  
-//        }  
+        if (superClass instanceof Class<?>) {
+            // Type has four subinterface:  
+            // (1) GenericArrayType: component type is either a  
+            // parameterized type or a type variable. Parameterized type is a class  
+            // or interface with its actual type argument, e.g., ArrayList<String>.  
+            // Type variable is unqualified identifier like T or V.  
+            //  
+            // (2) ParameterizedType: see (1).  
+            //  
+            // (3) TypeVariable<D>: see (1).  
+            //  
+            // (4) WildcardType: ?  
+            //  
+            // and one subclass:  
+            // (5) Class.  
+            //  
+            // If TypeReference is created by 'new TypeReference() { }', then  
+            // superClass would be just an instance of Class instead of one of the  
+            // interfaces described above. In that case, because I don't have type  
+            // passed to TypeReference, an exception should be raised.  
+            throw new IllegalStateException();  
+        }  
        
         // By superClass, we mean 'TypeReference<T>'. So, it is obvious that  
         // superClass is ParameterizedType.  
@@ -114,8 +164,8 @@ public class Ilk<T> {
 
     /**
      * Create a box that contains the given object that can return the given
-     * object cast to the appropriate parameterized type using another ilk
-     * instance.
+     * object cast to the appropriate parameterized type using an
+     * <code>Ilk</code> instance.
      * 
      * @param object
      *            The object to box.
@@ -126,17 +176,20 @@ public class Ilk<T> {
     }
 
     /**
-     * It is also rather annoying to get an Ilk.Box with an Ilk in it, so here
-     * is a method to do that.
+     * It is also rather annoying to get an <code>Ilk.Box</code> with an
+     * <code>Ilk</code> in it, so here is a method to do that.
      * 
      * @return This Ilk boxed.
      */
     public Box box() {
         return new Box(new Key(new Types.Parameterized(Ilk.class, null, new Type[] { key.type })), this);
     }
-    
+
     /**
-     * Generate a string representation of the <code>Ilk</code> by using the string representation of the <code>Ilk.Key</code>.
+     * Generate a string representation of the <code>Ilk</code> by using the
+     * string representation of the <code>Ilk.Key</code>.
+     * 
+     * @return A string representation of this object.
      */
     public String toString() {
         return key.toString();
@@ -335,7 +388,15 @@ public class Ilk<T> {
             }
             throw new ClassCastException();
         }
-        
+
+        /**
+         * Create a string representation of this <code>Ilk.Box</code> that that
+         * gives the appearance of a map with one element whose key is the
+         * <code>key</code> property an whose value is the <code>object</code>
+         * property.
+         * 
+         * @return A string representation of this object.
+         */
         public String toString() {
             return Collections.singletonMap(key, object).toString();
         }
