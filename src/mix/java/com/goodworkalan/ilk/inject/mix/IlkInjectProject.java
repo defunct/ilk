@@ -21,7 +21,7 @@ public class IlkInjectProject implements ProjectModule {
             .cookbook(JavaProject.class)
                 .produces("com.github.bigeasy.ilk/ilk-inject/0.1")
                 .depends()
-                    .production("com.github.bigeasy.ilk/ilk/0.+1")
+                    .production("com.github.bigeasy.ilk/ilk-reflect/0.+1")
                     .production("com.github.bigeasy.reflective/reflective/0.+1")
                     .production("javax.inject/inject/+1")
                     .development("org.testng/testng-jdk15/5.10")

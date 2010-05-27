@@ -27,7 +27,7 @@ class InstanceVendor<I> extends Vendor<I> {
         this.instance = instance;
     }
     
-    protected Ilk.Box get(Injector injector) {
+    public Ilk.Box get(Injector injector) {
         return ilk.box(instance);
     }
 }

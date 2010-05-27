@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.IlkReflect;
 
 /**
  * Represents an invocation of the injector for a single thread of execution.
@@ -21,7 +22,7 @@ class Injection {
     
     public Queue<Ilk.Box> unset = new LinkedList<Ilk.Box>();
     
-    public Queue<Ilk.Reflector> reflectors = new LinkedList<Ilk.Reflector>();
+    public Queue<IlkReflect.Reflector> reflectors = new LinkedList<IlkReflect.Reflector>();
 
     public boolean setting;
 

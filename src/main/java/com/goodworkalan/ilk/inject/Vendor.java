@@ -1,6 +1,10 @@
 package com.goodworkalan.ilk.inject;
 
+import static com.goodworkalan.ilk.Types.getRawClass;
+import static com.goodworkalan.ilk.inject.InjectException._;
+
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
@@ -8,6 +12,7 @@ import javax.inject.Qualifier;
 import javax.inject.Scope;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.IlkReflect;
 
 /**
  * Supplies an instance of an object or a <code>Provider&lt;T&gt;</code>.
@@ -15,7 +20,7 @@ import com.goodworkalan.ilk.Ilk;
  * This internal interface is used in lieu of using
  * {@link javax.inject.Provider Provider&lt;T&gt;} directly. Instead of
  * providing object instances directly, the <code>Vendor</code> interface
- * encapsulates objects in type-safe {@link Ilk.Box} containers. The
+ * encapsulates objects in type-safe {@link IlkReflect.Box} containers. The
  * <code>Ilk.Box</code> will preserve the actual type information for generic
  * types, so that generic objects can be checked for assignability before they
  * are returned by the injector or injected.
@@ -30,7 +35,7 @@ public abstract class Vendor<I> {
     
     protected final Class<? extends Annotation> scope;
     
-    protected final Ilk.Reflector reflector;
+    protected final IlkReflect.Reflector reflector;
 
     /**
      * Create a vendor with the given super type token.
@@ -41,7 +46,7 @@ public abstract class Vendor<I> {
      * Check that the given annotation is a qualifier annotation, or if it is
      * null convert it into a hidden no-qualifier annotation.
      */
-    protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Reflector reflector) {
+    protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, IlkReflect.Reflector reflector) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
@@ -52,7 +57,7 @@ public abstract class Vendor<I> {
             scope = NoScope.class;
         }
         if (scope.equals(NoScope.class)) {
-            for (Annotation annotation : ilk.key.rawClass.getAnnotations()) {
+            for (Annotation annotation : getRawClass(ilk.key.type).getAnnotations()) {
                 if (annotation.annotationType().getAnnotation(Scope.class) != null) {
                     scope = annotation.annotationType();
                     break;
@@ -64,10 +69,10 @@ public abstract class Vendor<I> {
         this.ilk = ilk;
         this.qualifier = qualifier;
         this.scope = scope;
-        this.reflector = reflector == null ? Ilk.REFLECTOR : reflector;
+        this.reflector = reflector == null ? IlkReflect.REFLECTOR : reflector;
     }
     
-    protected abstract Ilk.Box get(Injector injector);
+    public abstract Ilk.Box get(Injector injector) throws InstantiationException, IllegalAccessException, InvocationTargetException;
     
     /**
      * Supply an instance of an object using the given injector to obtain an
@@ -83,7 +88,19 @@ public abstract class Vendor<I> {
         try {
             Ilk.Box box = injector.getBoxOrLockScope(ilk.key, qualifier, scope);
             if (box == null) {
-                box = get(injector);
+                try {
+                    box = get(injector);
+                } catch (Throwable e) {
+                  throw new InjectException(_("Unable to create new instance of [%s].", e, getRawClass(ilk.key.type)), e);
+                }
+                // TODO Is there a way to cache them if they are correct?
+                // (Probably not since it is really a graph, and sticking
+                // objects in the cache is bad if the graph is bad, unless you
+                // create a queue of good temporary scopes and that queue gets
+                // filled. (No, all constructed, then all setter injected, we
+                // would have to check that the setters are good.) You really
+                // shouldn't throw exceptions during injection, so scratch that,
+                // and a singleton can probably initialize twice.
                 injector.addBoxToScope(ilk.key, qualifier, scope, box, reflector);
             }
             success = true;
@@ -111,10 +128,10 @@ public abstract class Vendor<I> {
      * with their actual type information.
      */
     Ilk.Box provider(Injector injector) {
-        Ilk.Key provider = new Ilk<VendorProvider<I>>(ilk.key) { }.key;
+        Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(new Ilk<Ilk<I>>() {}, ilk).key;
         Type type = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
-        Ilk.Box boxedVendor = new Ilk<Vendor<I>>(ilk.key) {}.box(this);
+        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.assign(new Ilk<Ilk<I>>() {}, ilk).box(this);
         Ilk.Box boxedInjector = new Ilk<Injector>(Injector.class).box(injector);
-        return Injector.needsIlkConstructor(Ilk.REFLECTOR, provider, type, boxedVendor, boxedInjector);
+        return Injector.needsIlkConstructor(IlkReflect.REFLECTOR, provider, type, boxedVendor, boxedInjector);
     }
 }

@@ -11,5 +11,4 @@ import javax.inject.Qualifier;
 @Documented
 @Retention(RUNTIME)
 public @interface Licensed {
-
 }

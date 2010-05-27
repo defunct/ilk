@@ -3,13 +3,14 @@ package com.goodworkalan.ilk.inject;
 import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.IlkReflect;
 
 /**
  * A bridge from the {@link Provider Provider&lt;T&gt;} interface to a
  * {@link Vendor} implementation.
  * <p>
- * This class is generated through the reflection methods of {@link Ilk.Key}
- * which check the assignability of arguments encapsulated in {@link Ilk.Box}
+ * This class is generated through the reflection methods of {@link IlkReflect.Key}
+ * which check the assignability of arguments encapsulated in {@link IlkReflect.Box}
  * containers, and always return <code>Ilk.Box</code> containers that
  * encapsulate the return value with actual type arguments, if the return value
  * is generic. When this provider performs the cast of an object to a generic

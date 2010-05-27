@@ -12,13 +12,15 @@ import javax.inject.Provider;
 import javax.inject.Scope;
 import javax.inject.Singleton;
 
+import com.goodworkalan.ilk.IlkReflect;
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.Types;
 
 /**
  * A builder for injectors.
  * <p>
  * This builder employs a minimal builder interface that provides only a single
- * method for each type of binding. The bindings must be provided as {@link Ilk}
+ * method for each type of binding. The bindings must be provided as {@link IlkReflect}
  * super type tokens. For unqualified bindings, pass null as the qualifier
  * annotation. For unscoped bindings, pass null for the scope annotation.
  * <p>
@@ -75,7 +77,7 @@ public class InjectorBuilder {
         builders.put(NoQualifier.class, new HashMap<Ilk.Key, Vendor<?>>());
     }
 
-    private final Map<Package, Ilk.Reflector> reflectors = new HashMap<Package, Ilk.Reflector>();
+    private final Map<Package, IlkReflect.Reflector> reflectors = new HashMap<Package, IlkReflect.Reflector>();
 
     /**
      * Build package private implementations and <code>Provider&lt;T&gt;</code>
@@ -88,7 +90,7 @@ public class InjectorBuilder {
      * 
      * @param reflect The reflect implementation.
      */
-    public void reflector(Ilk.Reflector reflector) {
+    public void reflector(IlkReflect.Reflector reflector) {
         reflectors.put(reflector.getClass().getPackage(), reflector);
     }
 
@@ -181,7 +183,7 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      */
     public <I> Vendor<I> implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(implementation.key.rawClass.getPackage())));
+        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(Types.getRawClass(implementation.key.type).getPackage())));
     }
 
     /**
@@ -253,9 +255,9 @@ public class InjectorBuilder {
      * Define a scope in the injector using the given scope annotation. The
      * scope will be used to store constructed values in the injector.
      * <p>
-     * Scopes {@link #scope(Class, com.goodworkalan.ilk.Ilk.Box) can be
+     * Scopes {@link #scope(Class, com.goodworkalan.ilk.IlkReflect.Box) can be
      * persisted} and laster restored
-     * {@link #scope(Class, com.goodworkalan.ilk.Ilk.Box) restored} in order to
+     * {@link #scope(Class, com.goodworkalan.ilk.IlkReflect.Box) restored} in order to
      * provide scopes that can outlive their injectors.
      * 
      * @param scope
@@ -303,7 +305,7 @@ public class InjectorBuilder {
      * <p>
      * Scopes can be persisted by calling the {@link Injector#scope
      * Injector.scope} method to retrieve an opaque, but serializable, object
-     * that contains the values in scope. That value is an {@link Ilk.Box} which
+     * that contains the values in scope. That value is an {@link IlkReflect.Box} which
      * contains all of the scope collections. The scopes can be restored by
      * providing opaque collection to the <code>scope</code> method of a new
      * injector builder, but <strong>only after</strong> the injector that
@@ -339,7 +341,7 @@ public class InjectorBuilder {
      * Wrap the given class in a super type token. This is more succinct way of
      * defining classes.
      * <p>
-     * Calling the {@link Ilk#Ilk(Class) class constructor} of <code>Ilk</code>
+     * Calling the {@link IlkReflect#Ilk(Class) class constructor} of <code>Ilk</code>
      * can be verbose.
      * <p>
      * <pre>
