@@ -73,11 +73,12 @@ public class Ilk<T> {
      *                <code>V</code> it not itself a type variable.
      */
     public <V> Ilk<T> assign(Ilk<Ilk<V>> ilkIlk, Ilk<V> ilk) {
-        if (!(ilkIlk.key.type instanceof TypeVariable<?>)) {
+        Type typeVariable = ((ParameterizedType)ilkIlk.key.type).getActualTypeArguments()[0];
+        if (!(typeVariable instanceof TypeVariable<?>)) {
             throw new IllegalArgumentException();
         }
         Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
-        types.put((TypeVariable<?>) (((ParameterizedType)ilkIlk.key.type).getActualTypeArguments()[0]), ilk.key.type);
+        types.put((TypeVariable<?>) typeVariable, ilk.key.type);
         Type assigned = Types.getActualType(key.type, types);
         return new Ilk<T>(assigned);
     }

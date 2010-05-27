@@ -385,7 +385,7 @@ public class Types {
             if (actual == null) {
                 return unactualized;
             }
-            actual = getActualType(actual, assignments);
+//            actual = getActualType(actual, assignments);
             // FIXME Yes, you can replace TypeVariable with TypeVariable, so check.
             if (!(actual instanceof TypeVariable<?>)) {
                 checkTypeVariable(unactualized, actual);
