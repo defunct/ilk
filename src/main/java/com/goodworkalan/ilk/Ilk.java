@@ -238,6 +238,10 @@ public class Ilk<T> {
             this.hashCode = Types.hashCode(type);
         }
         
+        public Key get(int index) {
+            return new Key(((ParameterizedType) type).getActualTypeArguments()[index]);
+        }
+        
  
         /**
          * Determines if the class or interface represented by this key and all

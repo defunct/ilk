@@ -225,6 +225,13 @@ public class IlkTest {
         Ilk.Box box = new Ilk<String>() { }.box("Hello, World!");
         box.cast(Integer.class);
     }
+    
+    @Test
+    public void genericType() throws SecurityException, NoSuchFieldException {
+        Ilk<Four> ilk = new Ilk<Four>(){};
+        Type type = Types.getActualType(Four.class.getField("strings").getGenericType(), ilk.key.type);
+        assertEquals(type.toString(), "java.util.List<java.lang.String>");
+    }
 
 //    @Test
 //    public void classBox() {

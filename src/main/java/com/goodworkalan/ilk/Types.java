@@ -35,8 +35,11 @@ public class Types {
     public static Class<?> getRawClass(Type type) {
         if (type instanceof java.lang.reflect.ParameterizedType) {
             return (Class<?>) ((java.lang.reflect.ParameterizedType) type).getRawType();
+        } 
+        if (type instanceof Class<?>) {
+            return (Class<?>) type;
         }
-        return (Class<?>) type;
+        return null;
     }
 
     static String typeToString(Type type) {
@@ -425,7 +428,8 @@ public class Types {
 
     public static Type getActualType(Type unactualized, Type actualized, LinkedList<Map<TypeVariable<?>, Type>> assignments) {
         Type ownerType = null;
-        if (getRawClass(unactualized).getDeclaringClass() != null) {
+        Class<?> rawClass = getRawClass(unactualized);
+        if (rawClass != null && rawClass.getDeclaringClass() != null) {
             Type actualizedOwner = null;
             if (actualized instanceof ParameterizedType) {
                 actualizedOwner = ((ParameterizedType) actualized).getOwnerType();
@@ -451,7 +455,7 @@ public class Types {
             throw new IllegalArgumentException(); 
         }
         if ((unactualized instanceof Class<?>) || (unactualized instanceof ParameterizedType)) {
-            return getActualType(getRawClass(unactualized), actualized, new LinkedList<Map<TypeVariable<?>, Type>>());
+            return getActualType(unactualized, actualized, new LinkedList<Map<TypeVariable<?>, Type>>());
         }
         return getActualType(unactualized, Collections.<TypeVariable<?>, Type>emptyMap());
     }
