@@ -113,7 +113,8 @@ public class Injector {
         for (Map.Entry<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> entry : scopes.entrySet()) {
             this.scopes.put(entry.getKey(), new ConcurrentHashMap<List<Object>, Ilk.Box>(entry.getValue()));
         }
-        this.vendors.get(NoQualifier.class).put(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(InjectorBuilder.ilk(Injector.class), this, null));
+        Ilk<Injector> injectorIlk = new Ilk<Injector>(Injector.class);
+        this.vendors.get(NoQualifier.class).put(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(injectorIlk, injectorIlk.box(this), null));
         this.parent = parent;
     }
     
@@ -158,7 +159,7 @@ public class Injector {
        IlkReflect.set(reflector, field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
     }
     
-    Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
+    public Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
         return getVendor(key, annotationClass).instance(this);
     }
 

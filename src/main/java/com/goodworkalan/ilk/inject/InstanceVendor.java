@@ -14,7 +14,7 @@ import com.goodworkalan.ilk.Ilk;
  */
 class InstanceVendor<I> extends Vendor<I> {
     /** The instance. */
-    private final I instance;
+    private final Ilk.Box instance;
     
     /**
      * Create a provider that always returns the given instance.
@@ -22,12 +22,14 @@ class InstanceVendor<I> extends Vendor<I> {
      * @param instance
      *            The instance.
      */
-    public InstanceVendor(Ilk<I> ilk, I instance, Class<? extends Annotation> qualifier) {
+    public InstanceVendor(Ilk<I> ilk, Ilk.Box instance, Class<? extends Annotation> qualifier) {
         super(ilk, qualifier, null, null);
         this.instance = instance;
+        
+        instance.cast(ilk);
     }
     
     public Ilk.Box get(Injector injector) {
-        return ilk.box(instance);
+        return instance;
     }
 }

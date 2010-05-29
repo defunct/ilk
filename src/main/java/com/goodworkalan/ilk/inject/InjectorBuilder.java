@@ -248,6 +248,10 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      */
     public <I> Vendor<I> instance(I instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
+        return bind(new InstanceVendor<I>(type, type.box(instance), qualifier));
+    }
+    
+    public <I> Vendor<I> instance(Ilk.Box instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
         return bind(new InstanceVendor<I>(type, instance, qualifier));
     }
 
