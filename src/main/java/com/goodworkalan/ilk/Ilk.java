@@ -132,7 +132,7 @@ public class Ilk<T> {
         // getGenericSuperclass() instead of getSuperclass().  
         Type superClass = klass.getGenericSuperclass();  
        
-        if (superClass instanceof Class<?>) {
+//        if (superClass instanceof Class<?>) {
             // Type has four subinterface:  
             // (1) GenericArrayType: component type is either a  
             // parameterized type or a type variable. Parameterized type is a class  
@@ -152,8 +152,8 @@ public class Ilk<T> {
             // superClass would be just an instance of Class instead of one of the  
             // interfaces described above. In that case, because I don't have type  
             // passed to TypeReference, an exception should be raised.  
-            throw new IllegalStateException();  
-        }  
+//            throw new IllegalStateException();  
+//        }  
        
         // By superClass, we mean 'TypeReference<T>'. So, it is obvious that  
         // superClass is ParameterizedType.  
@@ -235,7 +235,7 @@ public class Ilk<T> {
          */
         public Key(Type type) {
             this.type = Types.getEquatable(type);
-            this.hashCode = type.hashCode();
+            this.hashCode = Types.hashCode(type);
         }
         
  
@@ -272,7 +272,7 @@ public class Ilk<T> {
                 return true;
             }
             if (object instanceof Key) {
-                return type.equals(((Key) object).type);
+                return Types.equals(type, ((Key) object).type);
             }
             return false;
         }

@@ -3,6 +3,7 @@ package com.goodworkalan.ilk;
 import static java.util.Arrays.asList;
 
 import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -453,5 +454,91 @@ public class Types {
             return getActualType(getRawClass(unactualized), actualized, new LinkedList<Map<TypeVariable<?>, Type>>());
         }
         return getActualType(unactualized, Collections.<TypeVariable<?>, Type>emptyMap());
+    }
+    
+    private static int typeAsCode(Object type) {
+        if (type instanceof GenericArrayType) {
+            return 1;
+        } 
+        if (type instanceof ParameterizedType) {
+            return 2;
+        } 
+        if (type instanceof TypeVariable<?>) {
+            return 3;
+        } 
+        if (type instanceof WildcardType) {
+            return 4;
+        }
+        return 5;
+    }
+
+    public static boolean equals(Type[] lefts, Type[] rights) {
+        if (lefts.length != rights.length) {
+            return false;
+        }
+        for (int i = 0; i < lefts.length; i++) {
+            if (!equals(lefts[i], rights[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(Object left, Object right) {
+        if (left == null || right == null) {
+            return left == null && right == null;
+        }
+        int leftTypeAsCode = typeAsCode(left);
+        if (leftTypeAsCode == typeAsCode(right)) {
+            switch (leftTypeAsCode) {
+            case 1:
+                return equals(((GenericArrayType) left).getGenericComponentType(), ((GenericArrayType) right).getGenericComponentType());
+            case 2:
+                ParameterizedType ptLeft = (ParameterizedType) left;
+                ParameterizedType ptRight = (ParameterizedType) right;
+                return ptLeft.getRawType().equals(ptRight.getRawType())
+                    && equals(ptLeft.getOwnerType(), ptRight.getOwnerType())
+                    && equals(ptLeft.getActualTypeArguments(), ptRight.getActualTypeArguments());
+            case 3:
+                TypeVariable<?> tvLeft = (TypeVariable<?>) left;
+                TypeVariable<?> tvRight = (TypeVariable<?>) right;
+                return tvLeft.getName().equals(tvRight.getName())
+                    && equals(tvLeft.getGenericDeclaration(), tvRight.getGenericDeclaration())
+                    && equals(tvLeft.getBounds(), tvRight.getBounds());
+            case 4:
+                WildcardType wtLeft = (WildcardType) left;
+                WildcardType wtRight = (WildcardType) right;
+                return equals(wtLeft.getLowerBounds(), wtRight.getLowerBounds())
+                    && equals(wtLeft.getUpperBounds(), wtRight.getUpperBounds());
+            default:
+                return left.equals(right);
+            }
+        }
+        return false;
+    }
+    
+    public static int hashCode(Type...types) {
+        int hashCode = 1;
+        for (Type type : types) {
+            hashCode *= 37;
+            if (type == null) {
+                hashCode = hashCode * 37 + 1;
+            } else if (type instanceof WildcardType) {
+                WildcardType wt = (WildcardType) type;
+                hashCode ^= hashCode(wt.getLowerBounds()) ^ hashCode(wt.getUpperBounds());
+            } else if (type instanceof ParameterizedType) {
+                ParameterizedType pt = (ParameterizedType) type;
+                hashCode ^= pt.getRawType().hashCode() ^ hashCode(pt.getOwnerType()) ^ hashCode(pt.getActualTypeArguments());
+            } else if (type instanceof TypeVariable<?>) {
+                TypeVariable<?> tv = (TypeVariable<?>) type;
+                hashCode ^= hashCode(tv.getBounds()) ^ tv.getName().hashCode();
+                hashCode ^= (tv.getGenericDeclaration() instanceof Member) ? tv.getGenericDeclaration().hashCode() : hashCode((Type) tv.getGenericDeclaration());
+            } else if (type instanceof GenericArrayType) {
+                hashCode ^= hashCode(((GenericArrayType) type).getGenericComponentType());
+            } else {
+                hashCode ^= ((Class<?>) type).hashCode();
+            }
+        }
+        return hashCode;
     }
 }
