@@ -153,7 +153,7 @@ public class IlkReflect {
         return new Ilk.Box(key, object);
     }
 
-    public Ilk.Box get(Reflector reflector, Field field, Ilk.Box object)
+    public static Ilk.Box get(Reflector reflector, Field field, Ilk.Box object)
     throws IllegalAccessException {
         checkAssignable(field.getDeclaringClass(), getRawClass(object.key.type));
         return enbox(new Ilk.Key(field.getGenericType()), reflector.get(field, object.object));
