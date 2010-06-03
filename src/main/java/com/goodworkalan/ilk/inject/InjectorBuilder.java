@@ -251,7 +251,7 @@ public class InjectorBuilder {
         return bind(new InstanceVendor<I>(type, type.box(instance), qualifier));
     }
     
-    public <I> Vendor<I> instance(Ilk.Box instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
+    public <I> Vendor<I> box(Ilk.Box instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
         return bind(new InstanceVendor<I>(type, instance, qualifier));
     }
 
