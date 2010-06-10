@@ -2,23 +2,27 @@ package com.goodworkalan.ilk.io.mix;
 
 import com.goodworkalan.mix.ProjectModule;
 import com.goodworkalan.mix.builder.Builder;
-import com.goodworkalan.mix.builder.JavaProject;
+import com.goodworkalan.mix.cookbook.JavaProject;
 
-public class IlkStreamProject extends ProjectModule {
-    @Override
+/**
+ * Builds the project definition for Ilk Stream.
+ *
+ * @author Alan Gutierrez
+ */
+public class IlkStreamProject implements ProjectModule {
+    /**
+     * Build the project definition for Ilk Stream.
+     *
+     * @param builder
+     *          The project builder.
+     */
     public void build(Builder builder) {
         builder
             .cookbook(JavaProject.class)
                 .produces("com.github.bigeasy.ilk/ilk-stream/0.1")
-                .main()
-                    .depends()
-                        .include("com.github.bigeasy.ilk/ilk/0.+1")
-                        .end()
-                    .end()
-                .test()
-                    .depends()
-                        .include("org.testng/testng-jdk15/5.10")
-                        .end()
+                .depends()
+                    .production("com.github.bigeasy.ilk/ilk/0.+1")
+                    .development("org.testng/testng-jdk15/5.10")
                     .end()
                 .end()
             .end();
