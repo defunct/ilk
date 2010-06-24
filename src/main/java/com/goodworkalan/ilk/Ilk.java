@@ -24,7 +24,7 @@ public class Ilk<T> {
     public final Key key;
 
     /**
-     * Create a super type token for the given class represnting a type that is
+     * Create a super type token for the given class representing a type that is
      * not generic..
      * 
      * @param keyClass
@@ -237,11 +237,19 @@ public class Ilk<T> {
             this.type = Types.getEquatable(type);
             this.hashCode = Types.hashCode(type);
         }
-        
+
+        /**
+         * Get a key for the type parameter at the given index.
+         * 
+         * @param index
+         *            The type parameter index.
+         * @return A key wrapping the type parameter.
+         * @exception ClassCastException
+         *                If the type is not a parameterized type.
+         */
         public Key get(int index) {
             return new Key(((ParameterizedType) type).getActualTypeArguments()[index]);
         }
-        
  
         /**
          * Determines if the class or interface represented by this key and all

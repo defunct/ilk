@@ -42,6 +42,7 @@ public class Types {
         return null;
     }
 
+    // TODO Document.
     static String typeToString(Type type) {
         if (type instanceof Class<?>) {
             return ((Class<?>) type).getName();
@@ -49,23 +50,31 @@ public class Types {
         return type.toString();
     }
     
+    // TODO Document.
     public static class Wildcard implements java.lang.reflect.WildcardType {
+        // TODO Document.
         private final Type[] lowerBounds;
 
+        // TODO Document.
         private final Type[] upperBounds;
         
+        // TODO Document.
         public Wildcard(Type[] lowerBounds, Type[] upperBounds) {
             this.lowerBounds = lowerBounds;
             this.upperBounds = upperBounds;
         }
+        
+        // TODO Document.
         public Type[] getLowerBounds() {
             return lowerBounds.clone();
         }
         
+        // TODO Document.
         public Type[] getUpperBounds() {
             return upperBounds.clone();
         }  
 
+        // TODO Document.
         public boolean equals(Object object) {
             if (object instanceof Types.Wildcard) {
                 Types.Wildcard wt = (Types.Wildcard) object;
@@ -75,10 +84,12 @@ public class Types {
             return false;
         }
         
+        // TODO Document.
         public int hashCode() {
             return Arrays.hashCode(lowerBounds) * 37 + Arrays.hashCode(lowerBounds);
         }
 
+        // TODO Document.
         public String toString() {
             StringBuffer string = new StringBuffer();
             if (lowerBounds.length != 0) { 
@@ -163,6 +174,7 @@ public class Types {
             return rawType;
         }
         
+        // TODO Document.
         public boolean equals(Object object) {
             if (object instanceof Types.Parameterized) {
                 Types.Parameterized pt = (Types.Parameterized) object;
@@ -173,6 +185,7 @@ public class Types {
             return false;
         }
         
+        // TODO Document.
         public int hashCode() {
             return asList(rawType, ownerType, Arrays.hashCode(actualTypeArguments)).hashCode();
         }
@@ -214,10 +227,12 @@ public class Types {
         return false;
     }
 
+    // TODO Document.
     public static boolean isEquitable(Type type) {
         return !((type instanceof ParameterizedType) || (type instanceof WildcardType)) || Types.class.equals(type.getClass().getDeclaringClass());
     }
 
+    // TODO Document.
     public static Type getEquatable(Type type) {
         if (isEquitable(type)) {
             return type;
@@ -225,7 +240,8 @@ public class Types {
         return getActualType(type, type);
     }
 
-    public static void getHierarchTypes(Map<TypeVariable<?>, Type> map, Type source) {
+    // TODO Document.
+   public static void getHierarchTypes(Map<TypeVariable<?>, Type> map, Type source) {
         if (source != null) {
             if (source instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) source;
@@ -243,6 +259,7 @@ public class Types {
         }
     }
 
+   // TODO Document.
     public static boolean isAssignableFrom(Type to, Type from) {
         if (getRawClass(to).isAssignableFrom(getRawClass(from))) {
             if (to instanceof Class<?>) { 
@@ -266,6 +283,7 @@ public class Types {
         return false;
     }
 
+    // TODO Document.
     public static boolean checkWildcardType(WildcardType wt, Type assignment, boolean flip) {
         Type[] lower = wt.getLowerBounds();
         for (int i = 0; i < lower.length; i++) {
@@ -289,6 +307,7 @@ public class Types {
         return true;
     }
     
+    // TODO Document.
     public static void checkTypeVariable(Type type, Type assignment) {
         TypeVariable<?> tv = (TypeVariable<?>) type;
         for (Type bound : tv.getBounds()) {
@@ -422,10 +441,7 @@ public class Types {
 
     }
     
-    public static boolean _hasRawClass(Type type) {
-        return (type instanceof Class<?>) || (type instanceof ParameterizedType);
-    }
-
+    // TODO Document.
     public static Type getActualType(Type unactualized, Type actualized, LinkedList<Map<TypeVariable<?>, Type>> assignments) {
         Type ownerType = null;
         Class<?> rawClass = getRawClass(unactualized);
@@ -449,6 +465,7 @@ public class Types {
         return actual;
     }
 
+    // TODO Document.
     public static Type getActualType(Type unactualized, Type actualized) {
         boolean isEquitable = Types.class.equals(unactualized.getClass().getDeclaringClass());
         if (isEquitable) {
@@ -460,6 +477,7 @@ public class Types {
         return getActualType(unactualized, Collections.<TypeVariable<?>, Type>emptyMap());
     }
     
+    // TODO Document.
     private static int typeAsCode(Object type) {
         if (type instanceof GenericArrayType) {
             return 1;
@@ -476,6 +494,7 @@ public class Types {
         return 5;
     }
 
+    // TODO Document.
     public static boolean equals(Type[] lefts, Type[] rights) {
         if (lefts.length != rights.length) {
             return false;
@@ -488,6 +507,7 @@ public class Types {
         return true;
     }
 
+    // TODO Document.
     public static boolean equals(Object left, Object right) {
         if (left == null || right == null) {
             return left == null && right == null;
@@ -521,6 +541,7 @@ public class Types {
         return false;
     }
     
+    // TODO Document.
     public static int hashCode(Type...types) {
         int hashCode = 1;
         for (Type type : types) {
