@@ -6,6 +6,14 @@ import java.lang.reflect.InvocationTargetException;
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.IlkReflect;
 
+/**
+ * Vender for a specific implementatation of an interface.
+ * 
+ * @author Alan Gutierrez
+ * 
+ * @param <I>
+ *            The interface type.
+ */
 class ImplementationVendor<I> extends Vendor<I> {
     private final Ilk.Key implementation;
     
