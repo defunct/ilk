@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 
 import javax.inject.Scope;
 
+// TODO Document.
 @Documented
 @Target( { ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)

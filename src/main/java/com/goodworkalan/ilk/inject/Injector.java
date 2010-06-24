@@ -153,19 +153,65 @@ public class Injector {
         this.vendors.get(NoQualifier.class).put(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(injectorIlk, injectorIlk.box(this), null));
         this.parent = parent;
     }
-    
+
+    /**
+     * Create a new injector builder to define an injector that is a child of
+     * this injector.
+     * 
+     * @return A new injector builder.
+     */
     public InjectorBuilder newInjector() {
         return new InjectorBuilder(this);
     }
-    
+
+    /**
+     * Get the serializable container for the given scope in this injector for
+     * preservation between injector instances.
+     * 
+     * @param scope
+     *            The scope annotation
+     * @return A serializable container of the scope contents.
+     */
     public Ilk.Box scope(Class<? extends Annotation> scope) {
         return SCOPE_TYPE.box(scopes.get(scope));
     }
-    
+
+    /**
+     * Get an instance of the given interface using the given vendor. This
+     * method is used by the multi-binding implementations to construct
+     * collections of instances from collections of vendors. The
+     * <code>InjectorBuilder</code> binding methods return the
+     * <code>Vendor</code> they define for use in mutli-binding collections.
+     * 
+     * @param <I>
+     *            The interface type.
+     * @param vendor
+     *            The implementation vendor.
+     * @return An instnace of the given type.
+     */
     public <I> I instance(Vendor<I> vendor) {
         return vendor.instance(this).cast(vendor.ilk);
     }
-    
+
+    /**
+     * Get the boxed owner instance of the given nested object or null if the
+     * given object is not nested or was not created by this injector. Instance
+     * bindings of nested objects will not have an owner instance reference,
+     * because they are not created by the injector.
+     * <p>
+     * You are able to create nested objects through injection, that will in
+     * turn use injection to obtain their owner object. There will be no way to
+     * provide an owner object, nor will there be an explicit reference to the
+     * object in the nested object that can be referenced from outside the
+     * nested object. To obtain the parent object, the injector takes note of
+     * the parent object when the nested object is constructed and stores in a
+     * weak (identity) hash map keyed on the nested object.
+     * 
+     * @param object
+     *            The nested object.
+     * @return The owner object or null if the object is not nested or was not
+     *         created by this injector.
+     */
     public Ilk.Box getOwnerInstance(Object object) {
         Ilk.Box box = ownerInstances.get(new WeakIdentityReference(object, null));
         if (box == null && parent != null) {
@@ -175,34 +221,69 @@ public class Injector {
     }
 
     // FIXME Interested in showing injector boundaries if an internal injection exception is thrown.
+    /**
+     * Get an instance of the the given interface bound to an implementation
+     * with the given qualifier, or to the implementation with no qualifier if
+     * the binding for the given qualifier does not exist. If given qualifier
+     * can be null, then unqualified binding is used.
+     * 
+     * @param <T>
+     *            Type interface type.
+     * @param type
+     *            The interface class.
+     * @param qualifier
+     *            The binding qualifier.
+     * @return An instance of the bound implementation.
+     */
     public <T> T instance(Class<T> type, Class<? extends Annotation> qualifier) {
         return instance(new Ilk<T>(type), qualifier);
     }
+
+    /**
+     * Get an instance of the the given interface bound to an implementation
+     * with the given qualifier, or to the implementation with no qualifier if
+     * the binding for the given qualifier does not exist. If given qualifier
+     * can be null, then unqualified binding is used.
+     * 
+     * @param <T>
+     *            Type interface type.
+     * @param ilk
+     *            The interface super type token.
+     * @param qualifier
+     *            The binding qualifier.
+     * @return An instance of the bound implementation.
+     */
     public <T> T instance(Ilk<T> ilk, Class<? extends Annotation> qualifier) {
         return instance(ilk.key, qualifier).cast(ilk);
     }
     
+    // TODO Document.
     public <T> Provider<T> provider(Ilk<T> ilk, Class<? extends Annotation> qualifier) {
         return provider(ilk.key, qualifier).cast(new Ilk<Provider<T>>() {}.assign(new Ilk<Ilk<T>>(){}, ilk));
     }
     
+    // TODO Document.
     public Ilk.Box inject(IlkReflect.Reflector reflector, Ilk.Box box, Method method)
     throws IllegalAccessException, InvocationTargetException {
         return IlkReflect.invoke(reflector, method, box, arguments(box.key, method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
     }
     
+    // TODO Document.
     public void inject(IlkReflect.Reflector reflector, Ilk.Box box, Field field) throws IllegalAccessException {
        IlkReflect.set(reflector, field, box, arguments(box.key, new Class<?>[]{ field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
     }
     
+    // TODO Document.
     public Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
         return getVendor(key, annotationClass).instance(this);
     }
 
+    // TODO Document.
     Ilk.Box provider(Ilk.Key key, Class<? extends Annotation> annotationClass) {
         return getVendor(key, annotationClass).provider(this);
     }
     
+    // TODO Document.
     void startInjection() {
         // High traffic method, so let's collect owner instances here, collect
         // them before we make new ones.
@@ -211,6 +292,7 @@ public class Injector {
         INJECTION.get().injectionDepth++;
     }
 
+    // TODO Document.
     /** FIXME Perfect example of no need to test twice, null injector. */
     void endInjection(boolean success) {
         Injection injection = INJECTION.get();
@@ -260,6 +342,7 @@ public class Injector {
         }
     }
 
+    // TODO Document.
     private Vendor<?> getStipulatedVendor(Ilk.Key key, Class<? extends Annotation> qualifier) {
         Map<Ilk.Key, Vendor<?>> stipulationByIlk = vendors.get(qualifier);
         if (stipulationByIlk != null) {
@@ -274,8 +357,10 @@ public class Injector {
         return null;
     }
 
+    // TODO Document.
     private final ConcurrentMap<List<Object>, Vendor<?>> cache = new ConcurrentHashMap<List<Object>, Vendor<?>>();
     
+    // TODO Document.
     public Vendor<?> getVendor(Ilk.Key key, Class<? extends Annotation> qualifier) {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
@@ -289,6 +374,7 @@ public class Injector {
         return vendor;
     }
 
+    // TODO Document.
     private <K> Vendor<?> getUncachedVendor(Ilk.Key key, Class<? extends Annotation> qualifier) {
         Vendor<?> vendor = getStipulatedVendor(key, qualifier);
         if (vendor == null) {
@@ -303,6 +389,7 @@ public class Injector {
         return vendor;
     }
     
+    // TODO Document.
     private Ilk.Box[] arguments(Ilk.Key type, Class<?>[] rawTypes, Annotation[][] annotations, Type[] genericTypes) {
         final Ilk.Box[] arguments = new Ilk.Box[rawTypes.length];
         for (int i = 0; i < genericTypes.length; i++) {
@@ -337,6 +424,7 @@ public class Injector {
         return arguments;
     }
 
+    // TODO Document.
     Ilk.Box getBoxOrLockScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         if (scope.equals(NoScope.class)) {
             return null;
@@ -374,8 +462,25 @@ public class Injector {
         return box;
     }
 
+    /**
+     * Record the newly created boxed object for setter injection and add it to
+     * its scope if the scope is defined.
+     * 
+     * @param key
+     *            The type key.
+     * @param qualifier
+     *            The binding qualifier.
+     * @param scope
+     *            The scope.
+     * @param box
+     *            The newly created object.
+     * @param reflector
+     *            The reflector to use for setter injection.
+     */
     void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box, IlkReflect.Reflector reflector) {
         Injection injection = INJECTION.get();
+        // FIXME Instances should not be setter injected. Maybe just put
+        // them in the scope, even in no scope.
         injection.unset.offer(box);
         injection.reflectors.offer(reflector);
         if (!scope.equals(NoScope.class)) {
@@ -386,6 +491,7 @@ public class Injector {
         }
     }
     
+    // TODO Document.
     Ilk.Box newInstance(IlkReflect.Reflector reflector, Ilk.Key type) throws InstantiationException, IllegalAccessException, InvocationTargetException {
         Constructor<?> injectable = null;
         Constructor<?> noArgument = null;

@@ -11,9 +11,10 @@ import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.IlkReflect;
 
 /**
- * Used in combination with a stack maintained in thread local storage, this
- * stack element class represents an invocation of the injector for a single
- * thread of execution.
+ * Used with thread local storage, this class represents an invocation of the
+ * injector for a single thread of execution. It tacks the injection depth and
+ * gathers the newly created objects for setter injection when the constructor
+ * injection call stack terminates.
  * 
  * @author Alan Gutierrez
  */
@@ -23,11 +24,22 @@ class Injection {
     
     /** The number of parent levels locked for scope update. */
     public int lockHeight;
-    
+
+    /** The queue of constructed objects that need to undergo setter injection. */
     public Queue<Ilk.Box> unset = new LinkedList<Ilk.Box>();
     
+    /**
+     * The parallel queue of reflectors used to perform setter injection against
+     * the boxed instances in <code>unset</code>.
+     */ 
     public Queue<IlkReflect.Reflector> reflectors = new LinkedList<IlkReflect.Reflector>();
 
+    /**
+     * Indicates that the injection is already in the process of setter
+     * injection and the setter injection logic should not be invoked. The
+     * constructor injection call stack has terminated and that subsequent call
+     * stacks are setter injection call stacks.
+     */
     public boolean setting;
 
     /**

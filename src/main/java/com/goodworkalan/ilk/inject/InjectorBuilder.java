@@ -77,6 +77,7 @@ public class InjectorBuilder {
         builders.put(NoQualifier.class, new HashMap<Ilk.Key, Vendor<?>>());
     }
 
+    /** A map of Java packages to the reflectors used to create objects in that package. */
     private final Map<Package, IlkReflect.Reflector> reflectors = new HashMap<Package, IlkReflect.Reflector>();
 
     /**
@@ -151,6 +152,7 @@ public class InjectorBuilder {
         }
     }
 
+    // TODO Document.
     public <I> Vendor<I> bind(Vendor<I> vendor) {
         Map<Ilk.Key, Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
         if (builderByIlk == null) {
@@ -251,6 +253,7 @@ public class InjectorBuilder {
         return bind(new InstanceVendor<I>(type, type.box(instance), qualifier));
     }
     
+    // TODO Document.
     public <I> Vendor<I> box(Ilk.Box instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
         return bind(new InstanceVendor<I>(type, instance, qualifier));
     }

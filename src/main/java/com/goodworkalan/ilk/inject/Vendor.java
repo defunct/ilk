@@ -31,10 +31,13 @@ public abstract class Vendor<I> {
     /** The super type token of the type to vend. */
     protected final Ilk<I> ilk;
     
+    // TODO Document.
     protected final Class<? extends Annotation> qualifier;
     
+    // TODO Document.
     protected final Class<? extends Annotation> scope;
     
+    // TODO Document.
     protected final IlkReflect.Reflector reflector;
 
     /**
@@ -72,6 +75,7 @@ public abstract class Vendor<I> {
         this.reflector = reflector == null ? IlkReflect.REFLECTOR : reflector;
     }
     
+    // TODO Document.
     public abstract Ilk.Box get(Injector injector) throws InstantiationException, IllegalAccessException, InvocationTargetException;
     
     /**

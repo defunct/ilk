@@ -29,6 +29,7 @@ class InstanceVendor<I> extends Vendor<I> {
         instance.cast(ilk);
     }
     
+    // TODO Document.
     public Ilk.Box get(Injector injector) {
         return instance;
     }
