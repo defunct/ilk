@@ -15,6 +15,7 @@ import com.goodworkalan.ilk.Ilk;
  * @author Alan Gutierrez
  */
 public class IlkAssociationTest {
+    /** Test looking up multiple values. */
     @Test
     public void multiLookup() {
         IlkAssociation<String> assoc = new IlkAssociation<String>(true);
@@ -42,6 +43,7 @@ public class IlkAssociationTest {
         assertEquals(got.get(2), "assignableListString");
     }
     
+    /** Test looking up single values. */
     @Test
     public void lookup() {
         IlkAssociation<String> assoc = new IlkAssociation<String>(false);
@@ -61,5 +63,4 @@ public class IlkAssociationTest {
         assertEquals(assoc.getAll(new Ilk<Two>() { }.key).get(0), "annotatedThree2");
         assertNull(assoc.get(new Ilk<One>() { }.key));
     }
-
 }

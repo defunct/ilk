@@ -105,7 +105,14 @@ public class IlkAssociation<T> {
         this.multi = copy.multi;
         addAll(copy);
     }
-    
+
+    /**
+     * Add all of the associations defined by the given
+     * <code>IlkAssociation</code> to this <code>IlkAssociation</code>.
+     * 
+     * @param other
+     *            The association to consume.
+     */
     public synchronized void addAll(IlkAssociation<T> other) {
         addAll(exact, other.exact);
         addAll(assignable, other.assignable);
@@ -115,7 +122,16 @@ public class IlkAssociation<T> {
             }
         }
     }
-    
+
+    /**
+     * Copies the contents of an exact or assignable map to from the given
+     * source map to the given destination map.
+     * 
+     * @param dest
+     *            The destination map.
+     * @param source
+     *            The source map.
+     */
     private void addAll(Map<Class<?>, Map<Ilk.Key, List<T>>> dest, Map<Class<?>, Map<Ilk.Key, List<T>>> source) {
         for (Map<Ilk.Key, List<T>> ilks : source.values()) {
             for (Ilk.Key key : ilks.keySet()) {
@@ -283,11 +299,31 @@ public class IlkAssociation<T> {
     public T get(Ilk.Key key) {
         return getQueue(key).peek();
     }
-    
+
+    /**
+     * Get a list of all of the types associated with the given key. The list
+     * will be in order of exact match, annotation matches, then in order of
+     * inheritance, must sub classed classes first, then by order of addition to
+     * the association.
+     * 
+     * @param key
+     *            The key.
+     * @return All of the values that match the key.
+     */
     public List<T> getAll(Ilk.Key key) {
         return new ArrayList<T>(getQueue(key));
     }
-    
+
+    /**
+     * Get a queue of all of the types associated with the given key. The list
+     * will be in order of exact match, annotation matches, then in order of
+     * inheritance, must sub classed classes first, then by order of addition to
+     * the association.
+     * 
+     * @param key
+     *            The key.
+     * @return All of the values that match the key.
+     */
     private Queue<T> getQueue(Ilk.Key key) {
         Queue<T> values = cache.get(key);
         if (values == null) {
