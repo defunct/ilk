@@ -1,5 +1,7 @@
 package com.goodworkalan.ilk;
 
+import java.util.List;
+
 import org.testng.annotations.Test;
 
 /**
@@ -14,6 +16,11 @@ public class IlkReflectTest {
         IlkReflect.Reflector reflector = new IlkReflect.Reflector();
         IlkReflect.invoke(reflector,IlkReflectTest.class.getMethod("actualize", Ilk.class), new Ilk<IlkReflect>(IlkReflectTest.class).box(null), new Ilk<Integer>(){}.box());
 //        box.cast(new Ilk<Ilk<List<List<? extends Integer>>>>() {});
+    }
+    
+    /** Example method to call through reflection. */
+    public static <T> Ilk<List<List<? extends T>>> actualize(Ilk<T> ilk) {
+        return new Ilk<List<List<? extends T>>>(){}.assign(new Ilk<Ilk<T>>() {}, ilk);
     }
     
     /** Classes never actually have type parameters. */
