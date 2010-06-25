@@ -8,7 +8,13 @@ import org.testng.annotations.Test;
 
 import com.goodworkalan.ilk.Ilk;
 
+/**
+ * Unit tests for the {@link IlkLoader} class.
+ *
+ * @author Alan Gutierrez
+ */
 public class IlkLoaderTest {
+    /** Test load. */
     @Test
     public void fromString() throws ClassNotFoundException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
