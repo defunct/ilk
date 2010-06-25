@@ -1,10 +1,14 @@
 package com.goodworkalan.ilk;
 
-import java.util.List;
-
 import org.testng.annotations.Test;
 
+/**
+ * Unit tests for the {@link IlkReflect} class.
+ *
+ * @author Alan Gutierrez
+ */
 public class IlkReflectTest {
+    /** Test method parameter assignment. */
     @Test
     public void testMethodParameters() throws Exception {
         IlkReflect.Reflector reflector = new IlkReflect.Reflector();
@@ -12,10 +16,7 @@ public class IlkReflectTest {
 //        box.cast(new Ilk<Ilk<List<List<? extends Integer>>>>() {});
     }
     
-    public static <T> Ilk<List<List<? extends T>>> actualize(Ilk<T> ilk) {
-        return new Ilk<List<List<? extends T>>>(){}.assign(new Ilk<Ilk<T>>() {}, ilk);
-    }
-
+    /** Classes never actually have type parameters. */
     @Test
     public void whatSortOfTypeIsWappedWhenClassIsUsed() {
         System.out.println(new Ilk<Class<Object>>(){}.key.type);
@@ -45,6 +46,7 @@ public class IlkReflectTest {
         System.out.println(ilkSubClassBoxed);
     }
     
+    /** Example type parameterized method. */
     public <V> Ilk.Box makeClass(Ilk<Class<V>> subClass, Class<? extends V> sc) throws Exception {
         Ilk<Class<? extends V>> ilkSubClass = new Ilk<Class<? extends V>>() {}.assign(new Ilk<V>() {}, sc);
         return ilkSubClass.box(sc);
