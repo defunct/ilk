@@ -28,7 +28,6 @@ public class IlkReflectTest {
     public void whatSortOfTypeIsWappedWhenClassIsUsed() {
         System.out.println(new Ilk<Class<Object>>(){}.key.type);
     }
-    
 
     /**
      * Here is a little conceptual backwater. How do you create an ilk that
@@ -43,7 +42,6 @@ public class IlkReflectTest {
      */
     @Test(enabled = false)
     public void workWithClasses() throws Exception {
-        // XXX When you use ilk, you're always adding an extra parameter.
         Class<? extends Object> o = Object.class.asSubclass(Object.class);
         Class<? extends Integer> i = Integer.class.asSubclass(Integer.class);
         i.asSubclass(o);

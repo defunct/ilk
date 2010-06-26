@@ -72,7 +72,7 @@ public class IlkReflect {
                 Type previous = types.get(tv);
                 if (previous == null) {
                     types.put(tv, argumentType);
-                } else if (!Types.getEquatable(argumentType).equals(previous)) {
+                } else if (!Types.equals(argumentType, previous)) {
                     throw new IllegalArgumentException();
                 }
             }
