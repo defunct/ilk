@@ -11,8 +11,6 @@ import java.util.Map;
 /**
  * An implementation of type tokens or Gafter's Gadget that generates a
  * navigable model of the parameterized types.
- * <p>
- * FIXME You can make diffused Ilk.Box by implementing an Ilk parser.
  * 
  * @author Alan Gutierrez
  * 
@@ -198,13 +196,6 @@ public class Ilk<T> {
     
     /**
      * Decorator of a Java class that tests assignability of type parameters.
-     * <p>
-     * FIXME I do not need all this in this class. I can simply assert that an
-     * ilk key is built around a parameterized type or a raw class. All of the
-     * reflection, all of the replacement, can be moved to external classes.
-     * <p>
-     * It is important to keep his minimal so that something like Stash does not
-     * become 32K library.
      * 
      * @author Alan Gutierrez
      */
@@ -234,7 +225,7 @@ public class Ilk<T> {
          *                If one of the keys cannot be assigned to the type.
          */
         public Key(Type type) {
-            this.type = Types.getEquatable(type);
+            this.type = type;
             this.hashCode = Types.hashCode(type);
         }
 

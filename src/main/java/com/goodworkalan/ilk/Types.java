@@ -1,18 +1,14 @@
 package com.goodworkalan.ilk;
 
-import static java.util.Arrays.asList;
-
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,54 +38,76 @@ public class Types {
         return null;
     }
 
-    // TODO Document.
+    /**
+     * Converts the given <code>Type</code> into a string representation using
+     * the class name instead of the <code>toString</code> value if the
+     * <code>Type</code> is a <code>Class</code>.
+     * 
+     * @param type
+     *            The type.
+     * @return A string representation of the type.
+     */
     static String typeToString(Type type) {
         if (type instanceof Class<?>) {
             return ((Class<?>) type).getName();
         }
         return type.toString();
     }
-    
-    // TODO Document.
+
+    /**
+     * An implementation of {@link java.lang.reflect.WildcardType WildcardType}
+     * to allow for the creation of <code>WildcardType</code> instances where
+     * <code>TypeVariable</code> instances have been replaced with
+     * <code>Class</code> or <code>ParameterizedType</code> instances.
+     * 
+     * @author Alan Gutierrez
+     */
     public static class Wildcard implements java.lang.reflect.WildcardType {
-        // TODO Document.
+        /** The sub most interface implemented by this wildcard type. */
         private final Type[] lowerBounds;
 
-        // TODO Document.
+        /** The super most interfaces implemented by this wildcard type. */
         private final Type[] upperBounds;
-        
-        // TODO Document.
+
+        /**
+         * Create a wild card type with the given upper and lower bounds.
+         * 
+         * @param lowerBounds
+         *            The sub most interface implemented by this wildcard type.
+         * @param upperBounds
+         *            The super most interfaces implemented by this wildcard
+         *            type.
+         */
         public Wildcard(Type[] lowerBounds, Type[] upperBounds) {
             this.lowerBounds = lowerBounds;
             this.upperBounds = upperBounds;
         }
-        
-        // TODO Document.
+
+        /**
+         * Get a copy of the sub most interfaces required by this wildcard type.
+         * 
+         * @return The sub most interfaces required by this wildcard type.
+         */
         public Type[] getLowerBounds() {
             return lowerBounds.clone();
         }
-        
-        // TODO Document.
+
+        /**
+         * Get a copy of the super most interfaces implemented by this wildcard
+         * type.
+         * 
+         * @return The super most interfaces implemented by this wildcard type.
+         */
         public Type[] getUpperBounds() {
             return upperBounds.clone();
         }  
 
-        // TODO Document.
-        public boolean equals(Object object) {
-            if (object instanceof Types.Wildcard) {
-                Types.Wildcard wt = (Types.Wildcard) object;
-                return Arrays.equals(lowerBounds, wt.lowerBounds)
-                    && Arrays.equals(upperBounds, wt.upperBounds);
-            }
-            return false;
-        }
-        
-        // TODO Document.
-        public int hashCode() {
-            return Arrays.hashCode(lowerBounds) * 37 + Arrays.hashCode(lowerBounds);
-        }
-
-        // TODO Document.
+        /**
+         * Create a string representation of the <code>WildcardType</code> as it
+         * would appear in Java source code.
+         * 
+         * @return A string representation of this <code>WildcardType</code>.
+         */
         public String toString() {
             StringBuffer string = new StringBuffer();
             if (lowerBounds.length != 0) { 
@@ -174,22 +192,6 @@ public class Types {
             return rawType;
         }
         
-        // TODO Document.
-        public boolean equals(Object object) {
-            if (object instanceof Types.Parameterized) {
-                Types.Parameterized pt = (Types.Parameterized) object;
-                List<Object> to = asList(rawType, ownerType, asList(actualTypeArguments));
-                List<Object> from = asList(pt.getRawType(), pt.getOwnerType(), asList(pt.getActualTypeArguments()));
-                return to.equals(from);
-            }
-            return false;
-        }
-        
-        // TODO Document.
-        public int hashCode() {
-            return asList(rawType, ownerType, Arrays.hashCode(actualTypeArguments)).hashCode();
-        }
-        
         /**
          * Create a string representation that resembles the type declaration.
          * 
@@ -207,6 +209,7 @@ public class Types {
             return string.toString();
         }
     }
+
     /**
      * Determine of the type given in from can be assigned to type type
      * given in to.
@@ -220,42 +223,49 @@ public class Types {
     public static boolean isParameterAssignableFrom(Type to, Type from) {
         if (getRawClass(to).isAssignableFrom(getRawClass(from))) {
             if (to instanceof ParameterizedType) {
-                return asList(((ParameterizedType) to).getActualTypeArguments()).equals(asList(((ParameterizedType) from).getActualTypeArguments()));
+                return equals(((ParameterizedType) to).getActualTypeArguments(), ((ParameterizedType) from).getActualTypeArguments());
             }
             return true;
         }
         return false;
     }
 
-    // TODO Document.
-    public static boolean isEquitable(Type type) {
-        return !((type instanceof ParameterizedType) || (type instanceof WildcardType)) || Types.class.equals(type.getClass().getDeclaringClass());
-    }
-
-    // TODO Document.
-    public static Type getEquatable(Type type) {
-        if (isEquitable(type)) {
-            return type;
-        }
-        return getActualType(type, type);
-    }
-
-    // TODO Document.
-   public static void getHierarchTypes(Map<TypeVariable<?>, Type> map, Type source) {
+    /**
+     * Create a map of type variables to their assigned types for the given
+     * actualized type. This will create a map that has an assignment for every
+     * type variable declared by every super class and every interface
+     * implemented by the given actualized type.
+     * <p>
+     * Type maps should not be combined. Don't attempt to build a type map that
+     * contains the type variable assignments for more than one type. Don't
+     * attempt to combine the type maps of a type and its owner type, for
+     * example. If two types implement the same generic super class or
+     * interface, the subsequent assignments for the implemented type will
+     * overwrite in the initial assignments.
+     * 
+     * @param types
+     *            The map of type variables to their assigned types.
+     * @param source
+     *            The actualized type.
+     */
+    public static void getHierarchTypes(Map<TypeVariable<?>, Type> types, Type source) {
         if (source != null) {
             if (source instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) source;
                 Type[] arguments = pt.getActualTypeArguments();
                 TypeVariable<?>[] parameters = getRawClass(source).getTypeParameters();
                 for (int i = 0; i < parameters.length; i++) {
-                    Type assignment = map.get(arguments[i]);
-                    map.put(parameters[i], assignment == null ? arguments[i] : assignment);
+                    Type assignment = null;
+                    if (arguments[i] instanceof TypeVariable<?>) {
+                        assignment = types.get(arguments[i]);
+                    }
+                    types.put(parameters[i], assignment == null ? arguments[i] : assignment);
                 }
             }
             for (Type iface : getRawClass(source).getGenericInterfaces()) {
-                getHierarchTypes(map, iface);
+                getHierarchTypes(types, iface);
             }
-            getHierarchTypes(map, getRawClass(source).getGenericSuperclass());
+            getHierarchTypes(types, getRawClass(source).getGenericSuperclass());
         }
     }
 
@@ -265,16 +275,16 @@ public class Types {
             if (to instanceof Class<?>) { 
                 return true;
             }
-            Type actualFrom = getActualType(getRawClass(to), from);
-            Types.Parameterized pt = (Types.Parameterized) getEquatable(to);
-            Type[] typesTo = pt.getActualTypeArguments();
-            Type[] typesFrom = ((ParameterizedType) actualFrom).getActualTypeArguments();
+            ParameterizedType actualFrom = (ParameterizedType) getActualType(getRawClass(to), from);
+            Type[] typesTo = ((ParameterizedType) to).getActualTypeArguments();
+            Type[] typesFrom = actualFrom.getActualTypeArguments();
             for (int i = 0; i < typesTo.length; i++) {
-                if (typesTo[i] instanceof WildcardType && !(typesFrom[i] instanceof WildcardType)) {
+                int code = typeAsCode(typesTo[i]);
+                if (code == 4 && code != typeAsCode(typesFrom[i])) {
                     if (!checkWildcardType((WildcardType) typesTo[i], typesFrom[i], false)) {
                         return false;
                     }
-                } else if (!typesTo[i].equals(typesFrom[i])) {
+                } else if (!equals(typesTo[i], typesFrom[i])) {
                     return false;
                 }
             }
@@ -467,17 +477,24 @@ public class Types {
 
     // TODO Document.
     public static Type getActualType(Type unactualized, Type actualized) {
-        boolean isEquitable = Types.class.equals(unactualized.getClass().getDeclaringClass());
-        if (isEquitable) {
-            throw new IllegalArgumentException(); 
-        }
         if ((unactualized instanceof Class<?>) || (unactualized instanceof ParameterizedType)) {
             return getActualType(unactualized, actualized, new LinkedList<Map<TypeVariable<?>, Type>>());
         }
         return getActualType(unactualized, Collections.<TypeVariable<?>, Type>emptyMap());
     }
-    
-    // TODO Document.
+
+    /**
+     * Convert the given type into an integer type code to greatly simplify
+     * equality testing by comparing codes, reducing the number of
+     * <code>instanceof</code> tests. There is an integer value assigned to each
+     * of the 5 classes derived from <code>Type</code>. The <code>Class</code>
+     * and any types not derived from <code>Type</code> share the same code,
+     * since classes are tested for equality using <code>Object.equals()</code>.
+     * 
+     * @param type
+     *            The type.
+     * @return An integer type.
+     */
     private static int typeAsCode(Object type) {
         if (type instanceof GenericArrayType) {
             return 1;
@@ -494,8 +511,20 @@ public class Types {
         return 5;
     }
 
-    // TODO Document.
-    public static boolean equals(Type[] lefts, Type[] rights) {
+    /**
+     * Determine if the the two arrays of types are equal, comparing the type at
+     * each element of one array against the type in the element at the same
+     * index in the other array. The two arrays are equal if they are the same
+     * length and if each element at each index is equal to the element in the
+     * other array at the same index.
+     * 
+     * @param lefts
+     *            An array of types to test for equality.
+     * @param rights
+     *            Another array of types to test for equality.
+     * @return True if the arrays of types are equal.
+     */
+    private static boolean equals(Type[] lefts, Type[] rights) {
         if (lefts.length != rights.length) {
             return false;
         }
@@ -507,7 +536,27 @@ public class Types {
         return true;
     }
 
-    // TODO Document.
+    /**
+     * Determine if the two type objects are equal, recursively comparing their
+     * properties if they are <code>Type</code> derived objects. This method
+     * accepts <code>Object</code> and not <code>Type</code> so that is can be
+     * used to compare the return value of
+     * {@link TypeVariable#getGenericDeclaration()}, which is
+     * <code>Object</code>.
+     * <p>
+     * Generally, both types are <code>Type</code> derived objects, they are
+     * equals if they are the same derived type, and if all their members are
+     * the same. The exception is <code>Class</code>, which is tested using
+     * <code>Object.equals()</code>. <code>Class</code> an any other objects
+     * that are not derived from <code>Object</code> are tested using
+     * <code>Object.equals()</code>.
+     * 
+     * @param left
+     *            An object to test for equality.
+     * @param right
+     *            Another object to test for equality.
+     * @return True if the objects are equal.
+     */
     public static boolean equals(Object left, Object right) {
         if (left == null || right == null) {
             return left == null && right == null;
@@ -540,8 +589,14 @@ public class Types {
         }
         return false;
     }
-    
-    // TODO Document.
+
+    /**
+     * Generate a hash code from the given list of <code>Type</code> instances.
+     * 
+     * @param types
+     *            The types.
+     * @return A hash code generated from the types.
+     */
     public static int hashCode(Type...types) {
         int hashCode = 1;
         for (Type type : types) {
