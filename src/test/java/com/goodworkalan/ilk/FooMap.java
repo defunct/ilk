@@ -3,7 +3,7 @@ package com.goodworkalan.ilk;
 import java.util.TreeMap;
 
 /**
- * A parameterized typed for testing.
+ * Test parameterized type.
  * 
  * @author Alan Gutierrez
  * 

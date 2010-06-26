@@ -310,9 +310,6 @@ public class Ilk<T> {
      * A type-safe heterogeneous container for a single object that preserves
      * type information and safely casts a generic object back to its generic
      * type.
-     * <p>
-     * XXX Hey! Here is a place where you favored immutability, all the way
-     * down the line.
      * 
      * @author Alan Gutierrez
      */

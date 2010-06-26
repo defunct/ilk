@@ -6,7 +6,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -269,13 +268,23 @@ public class Types {
         }
     }
 
-   // TODO Document.
+    /**
+     * Determine if one type is assignable from another type. The types must be
+     * instances of <code>Class</code> or <code>ParameterizedType</code>.
+     * 
+     * @param to
+     *            The type to assign to.
+     * @param from
+     *            The type to assign from.
+     * @return True if type to assign form can be assigned to the type to assign
+     *         to.
+     */
     public static boolean isAssignableFrom(Type to, Type from) {
         if (getRawClass(to).isAssignableFrom(getRawClass(from))) {
             if (to instanceof Class<?>) { 
                 return true;
             }
-            ParameterizedType actualFrom = (ParameterizedType) getActualType(getRawClass(to), from);
+            ParameterizedType actualFrom = (ParameterizedType) getActualType(getRawClass(to), from, new LinkedList<Map<TypeVariable<?>, Type>>());
             Type[] typesTo = ((ParameterizedType) to).getActualTypeArguments();
             Type[] typesFrom = actualFrom.getActualTypeArguments();
             for (int i = 0; i < typesTo.length; i++) {
@@ -448,10 +457,41 @@ public class Types {
         }
         // Bogus temporary owner type and the null is very important.
         return new Types.Parameterized(getRawClass(unactualized), null, actual);
-
     }
-    
-    // TODO Document.
+
+    /**
+     * Create an actual type for the given unactualized type by replacing the
+     * type variables defined by the type, its super classes, and implemented
+     * interfaces with the type variable assignments defined by the actual type.
+     * <p>
+     * The type assignments for all of the super classes and implemented
+     * interfaces of the actualized type are determined by navigating its
+     * hierarchy from the lowest bound, to each of the upper bounds populating a
+     * map with type variable assignments. Type variables that are assigned type
+     * variables lookup the actual type in the map as it goes by.
+     * <p>
+     * To create an actualized type from the unactualized type a type map is
+     * created for the actualized type, and the types from the actualized type
+     * are applied to the unactualized type. Thereafter, if the actualized type
+     * is a nested type, then a type variable map is created for the owner type,
+     * an type assignments defined by the map are applied to the partially
+     * actualized type. This step is repeated if the parent is also a nested
+     * class, until an ancestor that is not a nested class is encountered.
+     * <p>
+     * The linked list of type variable assignment maps is used to create a list
+     * of the type variable assignment maps for a nested types and their parent
+     * types.
+     * 
+     * @param unactualized
+     *            The unactualized type.
+     * @param actualized
+     *            The actualized type.
+     * @param assignments
+     *            An empty linked list of type variable assignment maps.
+     * @return An actual type created by replacing the type variables of the
+     *         unactualized type with the type variable assignments of the
+     *         actualized type.
+     */
     public static Type getActualType(Type unactualized, Type actualized, LinkedList<Map<TypeVariable<?>, Type>> assignments) {
         Type ownerType = null;
         Class<?> rawClass = getRawClass(unactualized);
@@ -474,15 +514,7 @@ public class Types {
         }
         return actual;
     }
-
-    // TODO Document.
-    public static Type getActualType(Type unactualized, Type actualized) {
-        if ((unactualized instanceof Class<?>) || (unactualized instanceof ParameterizedType)) {
-            return getActualType(unactualized, actualized, new LinkedList<Map<TypeVariable<?>, Type>>());
-        }
-        return getActualType(unactualized, Collections.<TypeVariable<?>, Type>emptyMap());
-    }
-
+  
     /**
      * Convert the given type into an integer type code to greatly simplify
      * equality testing by comparing codes, reducing the number of
@@ -558,6 +590,7 @@ public class Types {
      * @return True if the objects are equal.
      */
     public static boolean equals(Object left, Object right) {
+        // Needed to test raw types of parameterized types.
         if (left == null || right == null) {
             return left == null && right == null;
         }

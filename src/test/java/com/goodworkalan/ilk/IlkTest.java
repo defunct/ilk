@@ -8,9 +8,11 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,13 +48,6 @@ public class IlkTest {
         assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
     }
     
-//    /** Test copy constructor. */
-//    @Test
-//    public void copy() {
-//        Ilk.Key key = new Ilk.Key(new Ilk<List<String>>() {}.key);
-//        assertEquals(key.toString(),  "java.util.List<java.lang.String>");
-//    }
-    
     /** Test quality. */
     @Test
     public void equality() {
@@ -72,14 +67,15 @@ public class IlkTest {
         assertFalse(listString.equals(null));
     }
     
+    /** Test assigning actual generic type parameters. */
     @Test
     public void actualTypes() throws Exception {
         Ilk.Key key = new Ilk<TreeMap<String, List<Integer>>>() { }.key;
-        Type actualMapType = Types.getActualType(Map.class, key.type);
+        Type actualMapType = Types.getActualType(Map.class, key.type, new LinkedList<Map<TypeVariable<?>, Type>>());
         Method put = Types.getRawClass(actualMapType).getMethod("put", Object.class, Object.class);
         Type[] generics = put.getGenericParameterTypes();
         for (int i = 0; i < generics.length; i++) {
-            System.out.println(Types.getActualType(generics[i], key.type));
+            System.out.println(Types.getActualType(generics[i], key.type, new LinkedList<Map<TypeVariable<?>, Type>>()));
         }
     }
 
@@ -93,35 +89,60 @@ public class IlkTest {
     }
     
     public Ilk.Key getSuperKey(Ilk.Key key, Class<?> keyClass) {
-      return new Ilk.Key(Types.getActualType(keyClass, key.type));
+      return new Ilk.Key(Types.getActualType(keyClass, key.type, new LinkedList<Map<TypeVariable<?>, Type>>()));
   }
 
+    /** Test creating a box that contains a class. */
     @Test
     public void boxAClass() {
         Ilk.Box box = new Ilk.Box(new Ilk<Class<Object>>() {});
         assertTrue(box.key.type instanceof ParameterizedType);
     }
     
+    /** Test box. */
     @Test
     public void ilkBox() {
         Ilk.Box box = new Ilk<List<String>>() {}.box();
         Ilk<List<String>> unboxed = box.cast(new Ilk<Ilk<List<String>>>() {});
         System.out.println(unboxed);
     }
-    
+
+    /**
+     * Test assigning a type to a type variable.
+     * 
+     * @param <T>
+     *            The type variable.
+     */
     @Test <T> void ilkFromKey() {
         Ilk.Box box = new Ilk<List<T>>() {}.assign(new Ilk<T>() {}, String.class).box();
         Ilk<List<String>> ilkString = box.cast(new Ilk<Ilk<List<String>>>() {});
         System.out.println(ilkString);
     }
     
+    /** Test assigning super type tokens to type variables. */
     @Test
     public  void assign() {
         Ilk.Box box = assignMap(new Ilk<Integer>(Integer.class), new Ilk<String>(String.class), new ArrayList<Map<Integer, String>>());
         List<Map<Integer, String>> listMap = box.cast(new Ilk<List<Map<Integer, String>>>() {});
         System.out.println(listMap);
     }
-    
+
+    /**
+     * Assign super type tokens to type variables.
+     * 
+     * @param <K>
+     *            The key type.
+     * @param <V>
+     *            The value type.
+     * @param k
+     *            The key super type token.
+     * @param v
+     *            The value super type token.
+     * @param unboxed
+     *            The instance to assign the type variables to.
+     * @return A boxed instance of the given unboxed type with the type
+     *         variables assigned.
+     */
     public <K, V> Ilk.Box assignMap(Ilk<K> k, Ilk<V> v, List<Map<K, V>> unboxed) {
         Ilk<List<Map<K, V>>> listMap = new Ilk<List<Map<K,V>>>(){};
         System.out.println(listMap);
@@ -141,16 +162,10 @@ public class IlkTest {
         assertEquals(getSuperKey(ilk.key, Serializable.class).toString(), "java.io.Serializable");
         assertEquals(getSuperKey(ilk.key, Object.class).toString(), "java.lang.Object");
         assertEquals(getSuperKey(ilk.key, TreeMap.class).toString(), "java.util.TreeMap<java.lang.Integer, java.util.ArrayList<java.lang.String>>");
-        Ilk.Key collectable = new Ilk<Collectable>() { }.key;
-        assertEquals(getSuperKey(collectable, Collection.class).toString(), "java.util.Collection<java.lang.Integer>");
+        Ilk.Key collectable = new Ilk<IntegerComparable>() { }.key;
+        assertEquals(getSuperKey(collectable, Comparable.class).toString(), "java.lang.Comparable<java.lang.Integer>");
     }
     
-//    @Test(expectedExceptions = IllegalArgumentException.class)
-//    public void badSuperKey() {
-//        Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
-//        assertNull(getSuperKey(ilk.key, Number.class));
-//    }
-
     /** Test is assignable from. */
     @Test
     public void assignment() {
@@ -226,18 +241,11 @@ public class IlkTest {
         box.cast(Integer.class);
     }
     
+    /** Test get actual type against the generic type of a field. */
     @Test
     public void genericType() throws SecurityException, NoSuchFieldException {
         Ilk<Four> ilk = new Ilk<Four>(){};
-        Type type = Types.getActualType(Four.class.getField("strings").getGenericType(), ilk.key.type);
+        Type type = Types.getActualType(Four.class.getField("strings").getGenericType(), ilk.key.type, new LinkedList<Map<TypeVariable<?>, Type>>());
         assertEquals(type.toString(), "java.util.List<java.lang.String>");
     }
-
-//    @Test
-//    public void classBox() {
-//        Ilk<Class<Integer>> classIlk = new Ilk<Class<Integer>>() { };
-//        Ilk.Box classBox = new Ilk.Box(new Integer(0).getClass());
-//        Class<Integer> intClass = classBox.cast(classIlk);
-//        assertEquals(intClass, Integer.class);
-//    }
 }
