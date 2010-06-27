@@ -80,14 +80,19 @@ public class Ilk<T> {
         Type assigned = Types.getActualType(key.type, types);
         return new Ilk<T>(assigned);
     }
-    
+
     /**
      * Create a new <code>Ilk</code> by assigning the type variable represented
-     * by the given <code>ilk</code> with the given <code>type</code>. THe gi 
+     * by the given <code>ilk</code> with the given <code>type</code>.
+     * 
      * @param <V>
+     *            The type variable type.
      * @param typeVariable
+     *            The type variable super type token.
      * @param type
-     * @return
+     *            The type.
+     * @return A new super type token with the type variable replaced with the
+     *         type.
      */
     public <V> Ilk<T> assign(Ilk<V> typeVariable, Type type) {
         Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
@@ -210,19 +215,10 @@ public class Ilk<T> {
         public final Type type;
 
         /**
-         * Actualize the given type by replacing the type variables with the
-         * types in the given list of keys. If no keys are given, to replacement
-         * is attempted, and the given type is wrapped.
+         * Create a type key around the given type.
          * 
          * @param type
          *            The type.
-         * @param keys
-         *            The list of keys.
-         * @exception IllegalArgumentException
-         *                If there are not enough or too many keys to replace
-         *                the type parameters.
-         * @exception ClassCastException
-         *                If one of the keys cannot be assigned to the type.
          */
         public Key(Type type) {
             this.type = type;

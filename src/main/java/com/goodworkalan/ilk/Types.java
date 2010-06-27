@@ -150,8 +150,10 @@ public class Types {
          * the given type arguments in lieu of the type arguments in the given
          * parameterized type.
          * 
-         * @param pt
-         *            The parameterized type.
+         * @param rawType
+         *            The raw type.
+         * @param ownerType
+         *            The owner type
          * @param actualTypeArguments
          *            The replacement actual type arguments.
          */
@@ -302,7 +304,18 @@ public class Types {
         return false;
     }
 
-    // TODO Document.
+    /**
+     * Check that the given assignment can be assigned to the wildcard type, or
+     * vice-versa if the flip parameter is true.
+     * 
+     * @param wt
+     *            The wildcard type.
+     * @param assignment
+     *            The assignment.
+     * @param flip
+     *            Whether to flip the test.
+     * @return True if the assignment can be assigned to the wildcard type.
+     */
     public static boolean checkWildcardType(WildcardType wt, Type assignment, boolean flip) {
         Type[] lower = wt.getLowerBounds();
         for (int i = 0; i < lower.length; i++) {
@@ -325,8 +338,17 @@ public class Types {
         }
         return true;
     }
-    
-    // TODO Document.
+
+    /**
+     * Check that the given assignment can be assigned to the type variable by
+     * checking the type variables bounds throwing an
+     * <code>IllegalArgumentException</code> if the type cannot be assigned.
+     * 
+     * @param type
+     *            The type variable.
+     * @param assignment
+     *            The assignment.
+     */
     public static void checkTypeVariable(Type type, Type assignment) {
         TypeVariable<?> tv = (TypeVariable<?>) type;
         for (Type bound : tv.getBounds()) {
@@ -349,62 +371,14 @@ public class Types {
     /**
      * Create an actual sub-type of the given type replacing variables with the
      * types in the given variable map.
-     * <p>
-     * This is going to be hard to remember...
-     * <p>
-     * Key to understanding is first that the <code>unactualized</code> must be
-     * a super-type of <code>actualized<code>
-     * found using the {@link #getSuperType(Type, Class)} method, and second
-     * that the type variables can be empty, they are for assigning types to 
-     * type variables that are external to the <code>actualized</code> type
-     * hierarchy. If a type is created with a method type variable, say, it
-     * becomes a part of the <code>actualized</code> type. The
-     * <code>assignments</code> map can be used to assign those
-     * <code>TypeVariable</code> occurrences.
-     * <p>
-     * Once you've called this method, you'll have a parameterized type map...
-     * <p>
-     * Because this is in support of Ilk, when you call this method with a
-     * non-parameterized type and an empty type map, this method is a no-op and
-     * returns the given type. This method is used to initialize an
-     * <code>Ilk.Key</code> and create a type that is comparable and assignable.
-     * This way I can keep from bulking up the library with conditionals and
-     * flavors of this method. I was really counting bytes and didn't want to
-     * check the type used to construct an <code>Ilk.Key</code>, when I could
-     * code this method to do nothing and return the type.
-     * <p>
-     * Funny thing, I can see how this works now after I've written it, and I
-     * spent a day not understanding the magic. It was built through testing, so
-     * as the tests passed, I knew it was correct (simply, it was making the
-     * same assertions as the Java compiler), but I didn't get this bit until
-     * just now...
-     * <p>
-     * It is two methods, depending on the parameters passed. When unactualized
-     * is the same as actualized, then the method will iterate of over the type
-     * declaration and assign any type variables from the
-     * <code>assignments</code> map.
-     * <p>
-     * I guess I didn't want to write the iteration twice, and it almost worked
-     * too. It terminates the search when it hits a type variable and replaces
-     * it with a resolved variable. When there is an actualized type on an
-     * unactualized type, this stops for each of the unactualized type
-     * parameters. When it is an assignment, all of the parameters are
-     * actualized except for the missing external parameters, but that is if you
-     * only have one level, well it was, I changed it so that if there are
-     * parameters will will navigate the parameterized type, not the type
-     * arguments. It is really tricky code, so you're going to be really
-     * confused when you read it again. I don't envy you.
-     * <p>
-     * The given <code>type</code> is an actualized sub-type of the given
-     * <code>actualized</code> type. It is found using the
-     * {@link #getSuperType(Type, Class) getSuperType} method.
      * 
      * @param unactualized
-     * @param actualized
+     *            The type whose type variables will be assigned types from the
+     *            type variable map.
      * @param assignments
      *            The map of type variables to actual variables to map types
      *            that are actualized in the type hierarchy.
-     * @return
+     * @return The actual type.
      */
     public static Type getActualType(Type unactualized, Map<TypeVariable<?>, Type> assignments) {
         if (unactualized == null || (unactualized instanceof GenericArrayType)) {
