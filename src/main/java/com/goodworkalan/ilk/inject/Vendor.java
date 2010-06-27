@@ -20,10 +20,10 @@ import com.goodworkalan.ilk.IlkReflect;
  * This internal interface is used in lieu of using
  * {@link javax.inject.Provider Provider&lt;T&gt;} directly. Instead of
  * providing object instances directly, the <code>Vendor</code> interface
- * encapsulates objects in type-safe {@link IlkReflect.Box} containers. The
- * <code>Ilk.Box</code> will preserve the actual type information for generic
- * types, so that generic objects can be checked for assignability before they
- * are returned by the injector or injected.
+ * encapsulates objects in type-safe {@link com.goodworkalan.ilk.Ilk.Box}
+ * containers. The <code>Ilk.Box</code> will preserve the actual type
+ * information for generic types, so that generic objects can be checked for
+ * assignability before they are returned by the injector or injected.
  * 
  * @author Alan Gutierrez
  */
@@ -31,7 +31,7 @@ public abstract class Vendor<I> {
     /** The super type token of the type to vend. */
     protected final Ilk<I> ilk;
     
-    // TODO Document.
+    /** The binding qualifier. */
     protected final Class<? extends Annotation> qualifier;
     
     // TODO Document.
@@ -115,21 +115,16 @@ public abstract class Vendor<I> {
     }
 
     /**
-     * Supply a provoder for an object using the given injector to obtain any
-     * injected parameters.
-     * 
-     * @param injector
-     *            The dependency injector.
-     * @return An provider instance boxed with its actual type information.
-     */
-
-    /**
      * Construct a provider using reflection in order to preserve the actual
      * type information. The reflective methods of <code>Ilk.Key</code> will
      * check the actual type information in the <code>Ilk.Box</code> parameters
-     * against the actual type information in the type contained by the key. It will
-     * return the newly constructed objects encapsulated in a <code>Ilk.Box</code>
-     * with their actual type information.
+     * against the actual type information in the type contained by the key. It
+     * will return the newly constructed objects encapsulated in a
+     * <code>Ilk.Box</code> with their actual type information.
+     * 
+     * @param injector
+     *            The injector.
+     * @return A boxed instance of the provider.
      */
     Ilk.Box provider(Injector injector) {
         Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(new Ilk<Ilk<I>>() {}, ilk).key;

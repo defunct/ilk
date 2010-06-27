@@ -85,11 +85,12 @@ public class InjectorBuilder {
      * implementations defined in the package of the given <code>reflect</code>
      * implementation with the given <code>reflect</code>.
      * <p>
-     * The given reflect will only be used to reflect upon classes specified
-     * in the bindings in this injector builder. It cannot be used to instanciate
+     * The given reflect will only be used to reflect upon classes specified in
+     * the bindings in this injector builder. It cannot be used to instanciate
      * arbitrary package private classes in the package.
      * 
-     * @param reflect The reflect implementation.
+     * @param reflector
+     *            The reflect implementation.
      */
     public void reflector(IlkReflect.Reflector reflector) {
         reflectors.put(reflector.getClass().getPackage(), reflector);
@@ -152,7 +153,18 @@ public class InjectorBuilder {
         }
     }
 
-    // TODO Document.
+    /**
+     * Add the given <code>Vendor</code> to the injector. The
+     * <code>Vendor</code> defines the type key and qualifier of the binding.
+     * This method is used to add extension <code>Vendor</code> implementations
+     * like multi-bindings.
+     * 
+     * @param <I>
+     *            The type to bind.
+     * @param vendor
+     *            The vendor.
+     * @return The vendor.
+     */
     public <I> Vendor<I> bind(Vendor<I> vendor) {
         Map<Ilk.Key, Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
         if (builderByIlk == null) {
@@ -183,6 +195,7 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      * @param scope
      *            The scope or null to build a new instance every time.
+     * @return The implementation vendor.
      */
     public <I> Vendor<I> implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(Types.getRawClass(implementation.key.type).getPackage())));
@@ -206,6 +219,7 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      * @param scope
      *            The scope or null to build a new instance every time.
+     * @return The provider vendor.
      */
     public <I> Vendor<I> provider(Provider<? extends I> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         return bind(new ProviderInstanceVendor<I>(ilk, provider, qualifier, scope));
@@ -229,6 +243,7 @@ public class InjectorBuilder {
      *            The qualifier or null for unqualified.
      * @param scope
      *            The scope or null to build a new instance every time.
+     * @return The provider vendor.
      */
     public <I> Vendor<I> provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         return bind(new ProviderVendor<I>(provider, ilk, qualifier, scope, reflectors.get(provider.getClass().getPackage())));
@@ -248,23 +263,39 @@ public class InjectorBuilder {
      *            The super type token of the type to bind.
      * @param qualifier
      *            The qualifier or null for unqualified.
+     * @return The instance vendor.
      */
-    public <I> Vendor<I> instance(I instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
-        return bind(new InstanceVendor<I>(type, type.box(instance), qualifier));
+    public <I> Vendor<I> instance(I instance, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
+        return bind(new InstanceVendor<I>(ilk, ilk.box(instance), qualifier));
     }
-    
-    // TODO Document.
-    public <I> Vendor<I> box(Ilk.Box instance, Ilk<I> type, Class<? extends Annotation> qualifier) {
-        return bind(new InstanceVendor<I>(type, instance, qualifier));
+
+    /**
+     * Bind the the type specified by the given super type token annotated with
+     * the given qualifier to the given boxed instance. Neither the bound super
+     * type token nor the boxed instance may be null. If the qualifier is null,
+     * then the binding is used for unqualified uses of the given interface.
+     * 
+     * @param <I>
+     *            The type to bind.
+     * @param instance
+     *            The boxed instance to bind to the type.
+     * @param ilk
+     *            The super type token of the type to bind.
+     * @param qualifier
+     *            The qualifier or null for unqualified.
+     * @return The instance vendor.
+     */
+    public <I> Vendor<I> box(Ilk.Box instance, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
+        return bind(new InstanceVendor<I>(ilk, instance, qualifier));
     }
 
     /**
      * Define a scope in the injector using the given scope annotation. The
      * scope will be used to store constructed values in the injector.
      * <p>
-     * Scopes {@link #scope(Class, com.goodworkalan.ilk.IlkReflect.Box) can be
+     * Scopes {@link #scope(Class, com.goodworkalan.ilk.Ilk.Box) can be
      * persisted} and laster restored
-     * {@link #scope(Class, com.goodworkalan.ilk.IlkReflect.Box) restored} in order to
+     * {@link #scope(Class, com.goodworkalan.ilk.Ilk.Box) restored} in order to
      * provide scopes that can outlive their injectors.
      * 
      * @param scope
@@ -312,13 +343,13 @@ public class InjectorBuilder {
      * <p>
      * Scopes can be persisted by calling the {@link Injector#scope
      * Injector.scope} method to retrieve an opaque, but serializable, object
-     * that contains the values in scope. That value is an {@link IlkReflect.Box} which
-     * contains all of the scope collections. The scopes can be restored by
-     * providing opaque collection to the <code>scope</code> method of a new
-     * injector builder, but <strong>only after</strong> the injector that
-     * created the opaque scopes collection is no longer in use. Two injectors
-     * cannot share scope collections, so please be careful when persisting
-     * scopes.
+     * that contains the values in scope. That value is an
+     * {@link com.goodworkalan.ilk.Ilk.Box} which contains all of the scope
+     * collections. The scopes can be restored by providing opaque collection to
+     * the <code>scope</code> method of a new injector builder, but <strong>only
+     * after</strong> the injector that created the opaque scopes collection is
+     * no longer in use. Two injectors cannot share scope collections, so please
+     * be careful when persisting scopes.
      * <p>
      * This opaque scopes collection used to implement session scopes for
      * stateless protocols, such as a session scope for a web application. The
@@ -348,7 +379,7 @@ public class InjectorBuilder {
      * Wrap the given class in a super type token. This is more succinct way of
      * defining classes.
      * <p>
-     * Calling the {@link IlkReflect#Ilk(Class) class constructor} of <code>Ilk</code>
+     * Calling the {@link Ilk#Ilk(Class) class constructor} of <code>Ilk</code>
      * can be verbose.
      * <p>
      * <pre>

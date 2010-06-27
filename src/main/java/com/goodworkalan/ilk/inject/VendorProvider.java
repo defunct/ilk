@@ -9,14 +9,14 @@ import com.goodworkalan.ilk.IlkReflect;
  * A bridge from the {@link Provider Provider&lt;T&gt;} interface to a
  * {@link Vendor} implementation.
  * <p>
- * This class is generated through the reflection methods of {@link IlkReflect.Key}
- * which check the assignability of arguments encapsulated in {@link IlkReflect.Box}
- * containers, and always return <code>Ilk.Box</code> containers that
- * encapsulate the return value with actual type arguments, if the return value
- * is generic. When this provider performs the cast of an object to a generic
- * type, it does so knowing that the object was obtained through a constructor
- * or method that produces the provided type according to the actual type
- * arguments of the method or constructor.
+ * This class is generated through the reflection methods of {@link IlkReflect}
+ * which check the assignability of arguments encapsulated in
+ * {@link com.goodworkalan.ilk.Ilk.Box} containers, and always return
+ * <code>Ilk.Box</code> containers that encapsulate the return value with actual
+ * type arguments, if the return value is generic. When this provider performs
+ * the cast of an object to a generic type, it does so knowing that the object
+ * was obtained through a constructor or method that produces the provided type
+ * according to the actual type arguments of the method or constructor.
  * 
  * @author Alan Gutierrez
  * 
