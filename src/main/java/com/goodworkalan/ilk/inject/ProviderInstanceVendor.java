@@ -6,18 +6,33 @@ import javax.inject.Provider;
 
 import com.goodworkalan.ilk.Ilk;
 
-// TODO Document.
+/**
+ * Provides an specific instance of a provider of a type.
+ * 
+ * @author Alan Gutierrez
+ * 
+ * @param <I>
+ *            The type to vend.
+ */
 class ProviderInstanceVendor<I> extends Vendor<I> {
-    // TODO Document.
+    /** The provider. */
     private final Provider<? extends I> provider;
     
-    // TODO Document.
+    /**
+     * Create a provider instance vendor.
+     * @param ilk
+     * @param provider
+     * @param qualifier
+     * @param scope
+     */
     public ProviderInstanceVendor(Ilk<I> ilk, Provider<? extends I> provider, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         super(ilk, qualifier, scope, null);
         this.provider = provider;
     }
 
-    // TODO Document.
+    /**
+     * 
+     */
     public Ilk.Box get(Injector injector) {
         return ilk.box(provider.get());
     }

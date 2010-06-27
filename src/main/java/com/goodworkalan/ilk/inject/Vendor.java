@@ -34,10 +34,12 @@ public abstract class Vendor<I> {
     /** The binding qualifier. */
     protected final Class<? extends Annotation> qualifier;
     
-    // TODO Document.
+    /**  The scope in which to store the constructed object. */
     protected final Class<? extends Annotation> scope;
     
-    // TODO Document.
+    /**
+     * The reflector to use to construct the instance and invoke the setters.
+     */
     protected final IlkReflect.Reflector reflector;
 
     /**
@@ -48,6 +50,16 @@ public abstract class Vendor<I> {
      * <p>
      * Check that the given annotation is a qualifier annotation, or if it is
      * null convert it into a hidden no-qualifier annotation.
+     * 
+     * @param ilk
+     *            The super type token of the binding.
+     * @param qualifier
+     *            The binding qualifier.
+     * @param scope
+     *            The scope in which to store the constructed object.
+     * @param reflector
+     *            The reflector to use to construct the instance and invoke the
+     *            setters.
      */
     protected Vendor(Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, IlkReflect.Reflector reflector) {
         if (qualifier == null) {
@@ -74,8 +86,22 @@ public abstract class Vendor<I> {
         this.scope = scope;
         this.reflector = reflector == null ? IlkReflect.REFLECTOR : reflector;
     }
-    
-    // TODO Document.
+
+    /**
+     * Create an unscoped instance of the the implementation provided by this
+     * vendor.
+     * 
+     * @param injector
+     *            The injector.
+     * @return A boxed instance of the implementation.
+     * @throws InstantiationException
+     *             If the implementation is abstract.
+     * @throws IllegalAccessException
+     *             If the implementation class or its injected constructor are
+     *             inaccessible.
+     * @throws InvocationTargetException
+     *             If the constructor throws an exception.
+     */
     public abstract Ilk.Box get(Injector injector) throws InstantiationException, IllegalAccessException, InvocationTargetException;
     
     /**
@@ -90,22 +116,22 @@ public abstract class Vendor<I> {
         boolean success = false;
         injector.startInjection();
         try {
-            Ilk.Box box = injector.getBoxOrLockScope(ilk.key, qualifier, scope);
+            Ilk.Box box = null;
+            if (!NoScope.class.equals(scope)) {
+                box = injector.getBoxOrLockScope(ilk.key, qualifier, scope);
+            }
             if (box == null) {
                 try {
                     box = get(injector);
                 } catch (Throwable e) {
                   throw new InjectException(_("Unable to create new instance of [%s].", e, getRawClass(ilk.key.type)), e);
                 }
-                // TODO Is there a way to cache them if they are correct?
-                // (Probably not since it is really a graph, and sticking
-                // objects in the cache is bad if the graph is bad, unless you
-                // create a queue of good temporary scopes and that queue gets
-                // filled. (No, all constructed, then all setter injected, we
-                // would have to check that the setters are good.) You really
-                // shouldn't throw exceptions during injection, so scratch that,
-                // and a singleton can probably initialize twice.
-                injector.addBoxToScope(ilk.key, qualifier, scope, box, reflector);
+                if (getClass().equals(ImplementationVendor.class)) {
+                    injector.queueForSetterInjection(box, reflector);
+                }
+                if (!NoScope.class.equals(scope)) {
+                    injector.addBoxToScope(ilk.key, qualifier, scope, box);
+                }
             }
             success = true;
             return box;
@@ -125,6 +151,12 @@ public abstract class Vendor<I> {
      * @param injector
      *            The injector.
      * @return A boxed instance of the provider.
+     * @throws InvocationTargetException
+     *             If the provider constructor raises an exception.
+     * @throws IllegalAccessException
+     *             If the provider class or the constructor an inaccessible.
+     * @throws InstantiationException
+     *             If the provider class is abstract.
      */
     Ilk.Box provider(Injector injector) {
         Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(new Ilk<Ilk<I>>() {}, ilk).key;

@@ -8,7 +8,13 @@ import java.lang.annotation.Target;
 
 import javax.inject.Scope;
 
-// TODO Document.
+/**
+ * Indicates that an instance should be cached in a scope associated with the
+ * child injector that created it. If the injector is not a child injector, then
+ * it is quite obviously stored in the root injector.
+ * 
+ * @author Alan Gutierrez
+ */
 @Documented
 @Target( { ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)

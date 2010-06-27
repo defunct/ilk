@@ -82,8 +82,8 @@ public class Injector {
          * instance as this object, or if the referenced objects are the the
          * same objects.
          * 
-         * @param The
-         *            object to test for equality.
+         * @param object
+         *            The object to test for equality.
          * @return True if this object is equal to the given object.
          */
         public boolean equals(Object object) {
@@ -300,7 +300,7 @@ public class Injector {
      *             If the method raises an exception.
      */
     public Ilk.Box inject(IlkReflect.Reflector reflector, Ilk.Box box, Method method) throws IllegalAccessException, InvocationTargetException {
-        return IlkReflect.invoke(reflector, method, box, arguments(box.key, method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
+        return IlkReflect.invoke(reflector, method, box, arguments(method.getParameterTypes(), method.getParameterAnnotations(), method.getGenericParameterTypes()));
     }
 
     /**
@@ -320,7 +320,7 @@ public class Injector {
      */
     public void inject(IlkReflect.Reflector reflector, Ilk.Box box, Field field)
     throws IllegalAccessException {
-        IlkReflect.set(reflector, field, box, arguments(box.key, new Class<?>[] { field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
+        IlkReflect.set(reflector, field, box, arguments(new Class<?>[] { field.getType() }, new Annotation[][] { field.getAnnotations() }, new Type[] { field.getGenericType() })[0]);
     }
 
     /**
@@ -330,16 +330,14 @@ public class Injector {
      * does not exist. The qualifier can be null to select the unqualified
      * binding.
      * 
-     * @param <T>
-     *            Type interface type.
-     * @param ilk
+     * @param key
      *            The interface type key.
      * @param qualifier
      *            The binding qualifier.
      * @return A boxed instance of the bound implementation.
      */
-    public Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        return getVendor(key, annotationClass).instance(this);
+    public Ilk.Box instance(Ilk.Key key, Class<? extends Annotation> qualifier) {
+        return getVendor(key, qualifier).instance(this);
     }
 
     /**
@@ -349,17 +347,15 @@ public class Injector {
      * the given qualifier does not exist. The qualifier can be null to select
      * the unqualified binding.
      * 
-     * @param <T>
-     *            Type interface type.
-     * @param ilk
+     * @param key
      *            The interface type key.
      * @param qualifier
      *            The binding qualifier.
      * @return A boxed instance of the instance provider for the bound
      *         implementation.
      */
-    Ilk.Box provider(Ilk.Key key, Class<? extends Annotation> annotationClass) {
-        return getVendor(key, annotationClass).provider(this);
+    Ilk.Box provider(Ilk.Key key, Class<? extends Annotation> qualifier) {
+        return getVendor(key, qualifier).provider(this);
     }
 
     /**
@@ -513,14 +509,18 @@ public class Injector {
     }
 
     /**
-     * Create an array of boxed instances containing the 
-     * @param type
+     * Create an array of boxed instances from this injector for use in
+     * injecting a constructor, method or field.
+     * 
      * @param rawTypes
+     *            The raw classes of the parameters.
      * @param annotations
+     *            The annotations on the parameters.
      * @param genericTypes
-     * @return
+     *            The generic types of the parameters.
+     * @return An array of boxed instances.
      */
-    private Ilk.Box[] arguments(Ilk.Key type, Class<?>[] rawTypes, Annotation[][] annotations, Type[] genericTypes) {
+    private Ilk.Box[] arguments(Class<?>[] rawTypes, Annotation[][] annotations, Type[] genericTypes) {
         final Ilk.Box[] arguments = new Ilk.Box[rawTypes.length];
         for (int i = 0; i < genericTypes.length; i++) {
             Class<? extends Annotation> qualifierClass = null;
@@ -556,16 +556,19 @@ public class Injector {
     }
 
     /**
-     * Get the box from 
+     * Get the box from a scope or else lock the scope into which the box will
+     * be stored.
+     * 
      * @param key
+     *            The interface type key.
      * @param qualifier
+     *            The binding qualifier.
      * @param scope
-     * @return
+     *            The scope annotation.
+     * @return An instance from the scope, or null if the instance is not yet
+     *         cached.
      */
     Ilk.Box getBoxOrLockScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        if (scope.equals(NoScope.class)) {
-            return null;
-        }
         Injection injection = INJECTION.get();
         List<Object> qualifedType = Arrays.<Object> asList(key, qualifier);
         if (!injection.scopes.containsKey(scope)) {
@@ -600,8 +603,7 @@ public class Injector {
     }
 
     /**
-     * Record the newly created boxed object for setter injection and add it to
-     * its scope if the scope is defined.
+     * Queue the newly created object for addition to a scope.
      * 
      * @param key
      *            The type key.
@@ -611,24 +613,46 @@ public class Injector {
      *            The scope.
      * @param box
      *            The newly created object.
+     */
+    void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box) {
+        Injection injection = INJECTION.get();
+        if (injection.scopes.get(scope).containsKey( Arrays.<Object> asList(key, qualifier))) {
+            throw new IllegalStateException("Not expecting this state, implies an object that takes itself as a constructor argument.");
+        }
+        injection.scopes.get(scope).put(Arrays.<Object> asList(key, qualifier), box);
+    }
+
+    /**
+     * Queue the newly created object for setter injection.
+     * 
+     * @param box
+     *            The newly created object.
      * @param reflector
      *            The reflector to use for setter injection.
      */
-    void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box, IlkReflect.Reflector reflector) {
+    void queueForSetterInjection(Ilk.Box box, IlkReflect.Reflector reflector) {
         Injection injection = INJECTION.get();
-        // FIXME Instances should not be setter injected. Maybe just put
-        // them in the scope, even in no scope.
         injection.unset.offer(box);
-        injection.reflectors.offer(reflector);
-        if (!scope.equals(NoScope.class)) {
-            if (injection.scopes.get(scope).containsKey( Arrays.<Object> asList(key, qualifier))) {
-                throw new IllegalStateException("Not expecting this state, implies an object that takes itself as a constructor argument.");
-            }
-            injection.scopes.get(scope).put(Arrays.<Object> asList(key, qualifier), box);
-        }
+        injection.reflectors.offer(reflector);        
     }
 
-    // TODO Document.
+    /**
+     * Create a new instance of the given type using the given reflector to
+     * invoke the constructor. The constructor is provided arguments created by
+     * this injector as constructor parameters.
+     * 
+     * @param reflector
+     *            The reflector.
+     * @param type
+     *            The type key of the type to create.
+     * @return A new instance of the type.
+     * @throws InstantiationException
+     *             If the type is abstract.
+     * @throws IllegalAccessException
+     *             The the class or constructor is not accessible.
+     * @throws InvocationTargetException
+     *             If the constructor throws an exception.
+     */
     Ilk.Box newInstance(IlkReflect.Reflector reflector, Ilk.Key type)
     throws InstantiationException, IllegalAccessException, InvocationTargetException {
         Constructor<?> injectable = null;
@@ -650,7 +674,7 @@ public class Injector {
         if (injectable == null) {
             throw new InjectException(_("No injectable constructor found for [%s].", null, getRawClass(type.type)), null);
         }
-        Ilk.Box[] arguments = arguments(type, injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable .getGenericParameterTypes());
+        Ilk.Box[] arguments = arguments(injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable .getGenericParameterTypes());
         Ilk.Box instance = IlkReflect.newInstance(reflector, type, injectable, arguments);
         if (Types.getRawClass(type.type).isMemberClass()) {
             ownerInstances.put(new WeakIdentityReference(instance.object, ownerInstanceReferences), arguments[0]);
@@ -668,11 +692,14 @@ public class Injector {
      *            exception.
      * @param key
      *            The type of object to construct.
-     * @param ilk
+     * @param unwrapped
      *            The type to encapsulate with an <code>Ilk</code>.
      * @param arguments
      *            The additional constructor arguments, boxed.
      * @return A new boxed instance of the object.
+     * @throws InvocationTargetException 
+     * @throws IllegalAccessException 
+     * @throws InstantiationException 
      */
     static <T> Ilk.Box needsIlkConstructor(IlkReflect.Reflector reflector, Ilk.Key key, Type unwrapped, Ilk.Box... arguments) {
         try {

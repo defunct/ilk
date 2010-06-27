@@ -57,8 +57,8 @@ class ImplementationVendor<I> extends Vendor<I> {
     /**
      * Get a boxed instance of the implementation using the given injector.
      * 
-     * @param The
-     *            injector.
+     * @param injector
+     *            The injector.
      * @throws InstantiationException
      *             If the implementation is abstract.
      * @throws IllegalAccessException
