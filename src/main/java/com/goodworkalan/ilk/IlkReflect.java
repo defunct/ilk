@@ -12,6 +12,8 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.HashMap;
+import java.util.LinkedList;
+
 import static java.lang.String.format;
 import java.util.Map;
 
@@ -152,7 +154,7 @@ public class IlkReflect {
         Map<TypeVariable<?>, Type> assignments = new HashMap<TypeVariable<?>, Type>();
         for (int i = 0; i < parameters.length; i++) {
             getTypeParameters(constructor, assignments, parameters[i], arguments[i].key.type);
-            Type type = Types.getActualType(parameters[i], key.type);
+            Type type = Types.getActualType(parameters[i], key.type, new LinkedList<Map<TypeVariable<?>,Type>>());
             type = Types.getActualType(type, assignments);
             if (!Types.isAssignableFrom(type, arguments[i].key.type)) {
                 throw new IllegalArgumentException(format("Cannot assign [%s] from [%s].", parameters[i], arguments[i].key.type));
@@ -211,14 +213,14 @@ public class IlkReflect {
         Map<TypeVariable<?>, Type> assignments = new HashMap<TypeVariable<?>, Type>();
         for (int i = 0; i < parameters.length; i++) {
             getTypeParameters(method, assignments, parameters[i], arguments[i].key.type);
-            Type actual = Types.getActualType(parameters[i], object.key.type);
+            Type actual = Types.getActualType(parameters[i], object.key.type, new LinkedList<Map<TypeVariable<?>,Type>>());
             actual = Types.getActualType(actual, assignments);
             if (!Types.isAssignableFrom(actual, arguments[i].key.type)) {
                 throw new IllegalArgumentException(format("Cannot assign [%s] from [%s].", parameters[i], arguments[i].key.type));
             }
         }
         Object result = reflector.invoke(method, object.object, objects(arguments));
-        Type actual = Types.getActualType(method.getGenericReturnType(), object.key.type);
+        Type actual = Types.getActualType(method.getGenericReturnType(), object.key.type, new LinkedList<Map<TypeVariable<?>,Type>>());
         actual = Types.getActualType(actual, assignments);
         return enbox(new Ilk.Key(actual), result);
     }
@@ -244,7 +246,7 @@ public class IlkReflect {
     public static void set(Reflector reflector, Field field, Ilk.Box object, Ilk.Box value)
     throws IllegalAccessException {
         checkAssignable(field.getDeclaringClass(), getRawClass(object.key.type));
-        Type actual = Types.getActualType(field.getGenericType(), object.key.type);
+        Type actual = Types.getActualType(field.getGenericType(), object.key.type, new LinkedList<Map<TypeVariable<?>,Type>>());
         if (!Types.isAssignableFrom(actual, value.key.type)) {
             throw new IllegalArgumentException(String.format("Cannot assign [%s] from [%s] in [%s].", field.getGenericType(), object.key, field.getDeclaringClass()));
         }
