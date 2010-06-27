@@ -30,10 +30,10 @@ import static com.goodworkalan.ilk.Types.getRawClass;
  * descendants.
  * <p>
  * You specify an association by an exact match using the
- * {@link #exact(Key, Object) exact} method. A match by an annotation applied to
+ * {@link #exact(Ilk.Key, Object) exact} method. A match by an annotation applied to
  * a class is specified using the {@link #annotated(Class, Object) annotated}
  * method. A match specified by matching any class that is assignable to a given
- * class is specified by the {@link #assignable(Key, Object) derived} method.
+ * class is specified by the {@link #assignable(Ilk.Key, Object) derived} method.
  * <p>
  * An exact match will take precedence over an annotation or assignment match.
  * An annotation match will take precedence over an assignment match.
@@ -64,11 +64,9 @@ public class IlkAssociation<T> {
     private final boolean multi;
     
     /**
-     * The classes to their object diffusers as resolved by ascending the object
-     * hierarchy, looking for an object diffuser that will diffuse a super class
-     * or interface. This cache is reset when a new object diffuser is assigned
-     * using the {@link #setConverter(Class, ObjectDiffuser) setConverter}
-     * method.
+     * Cache of type keys to a queue of the values associated with the type
+     * keys, resolved from the stipulations, and cleared when new stipulations
+     * are made.
      */
     private final Map<Ilk.Key, Queue<T>> cache = new ConcurrentHashMap<Ilk.Key, Queue<T>>();
 
@@ -161,8 +159,8 @@ public class IlkAssociation<T> {
      * the lists are never changed after they have been added to the map, map
      * lookup does not need to be synchronized.
      * 
-     * @param type
-     *            The type.
+     * @param key
+     *            The type key.
      * @param value
      *            The value to associate with the type.
      */
@@ -181,9 +179,9 @@ public class IlkAssociation<T> {
      * @param map
      *            The map.
      * @param key
-     *            The key.
-     * @param value
-     *            The value.
+     *            The type key.
+     * @param values
+     *            The list of values.
      * @return A copy of the ilk pair list with the value added to the list
      *         associated with the key.
      */
@@ -252,7 +250,7 @@ public class IlkAssociation<T> {
      * 
      * @param key
      *            The super type token.
-     * @param converter
+     * @param value
      *            The value to associate with the type.
      */
     public synchronized void assignable(Ilk.Key key, T value) {
@@ -271,9 +269,9 @@ public class IlkAssociation<T> {
      * Annotations applied to super-classes or interfaces implemented by the
      * type will not be considered when determining the match.
      * 
-     * @param type
+     * @param annotation
      *            The annotation type.
-     * @param converter
+     * @param value
      *            The value to associate with the annotation type.
      */
     public synchronized void annotated(Class<? extends Annotation> annotation, T value) {
@@ -292,8 +290,8 @@ public class IlkAssociation<T> {
     /**
      * Get the object converter for the given object type.
      * 
-     * @param type
-     *            The object type.
+     * @param key
+     *            The type key.
      * @return The object converter.
      */
     public T get(Ilk.Key key) {
