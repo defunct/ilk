@@ -2,6 +2,7 @@ package com.goodworkalan.ilk.association;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -372,7 +373,7 @@ public class IlkAssociation<T> {
                                         throw new IllegalStateException();
                                     }
                                 });
-                                if (pair.getKey().isAssignableFrom(new Ilk.Key(Types.getActualType(getRawClass(iface), key.type)))) {
+                                if (pair.getKey().isAssignableFrom(new Ilk.Key(Types.getActualType(getRawClass(iface), key.type, new LinkedList<Map<TypeVariable<?>,Type>>())))) {
                                     sorted.put(pair.getKey(), pair.getValue());
                                 }
                                 for (List<T> found : sorted.values()) {
