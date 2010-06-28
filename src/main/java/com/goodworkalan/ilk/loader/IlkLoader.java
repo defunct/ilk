@@ -102,8 +102,8 @@ public class IlkLoader {
      * @throws ClassNotFoundException
      *             If any of the classes in the type definition cannot be found.
      */
-     private static String getTypeArguments(List<Type> arguments, ClassLoader classLoader, String typeDefintion, Map<String, Class<?>> imports) throws ClassNotFoundException {
-        Matcher matcher = TYPE_DEFINITION.matcher(typeDefintion);
+     private static String getTypeArguments(List<Type> arguments, ClassLoader classLoader, String typeDefinition, Map<String, Class<?>> imports) throws ClassNotFoundException {
+        Matcher matcher = TYPE_DEFINITION.matcher(typeDefinition);
         if (matcher.lookingAt()) {
             String className = matcher.group(1).replaceAll("\\s+", "");
             Class<?> type = imports.get(className);
@@ -112,7 +112,7 @@ public class IlkLoader {
             }
             if (matcher.group(2).equals("<")) {
                 List<Type> subArguments = new ArrayList<Type>();
-                String remaining = typeDefintion.substring(matcher.end() - 1);
+                String remaining = typeDefinition.substring(matcher.end() - 1);
                 while ((remaining = getTypeArguments(subArguments, classLoader, remaining.substring(1).trim(), imports)).startsWith(",")) {
                 }
                 arguments.add(new Types.Parameterized(type, type.getDeclaringClass(), subArguments.toArray(new Type[subArguments.size()])));
@@ -120,14 +120,14 @@ public class IlkLoader {
             } 
             if (matcher.group(2).equals(">")) {
                 arguments.add(type);
-                return typeDefintion.substring(matcher.end() - 1).trim();
+                return typeDefinition.substring(matcher.end() - 1).trim();
             } 
             if (matcher.group(2).equals(",")){
                 arguments.add(type);
-                return getTypeArguments(arguments, classLoader, typeDefintion.substring(matcher.end()).trim(), imports);
+                return getTypeArguments(arguments, classLoader, typeDefinition.substring(matcher.end()).trim(), imports);
             }
             arguments.add(type);
-            return typeDefintion.substring(matcher.end()).trim();
+            return typeDefinition.substring(matcher.end()).trim();
         }
         return "";
     }
