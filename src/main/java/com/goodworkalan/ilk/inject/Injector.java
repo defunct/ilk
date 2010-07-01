@@ -16,6 +16,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -127,11 +128,11 @@ public class Injector {
     private final Map<Class<? extends Annotation>, ConcurrentMap<List<Object>, Ilk.Box>> scopes;
 
     /** The thread based stack of injection invocations. */
-    private final static ThreadLocal<Injection> INJECTION = new ThreadLocal<Injection>() {
-        public Injection initialValue() {
-            return new Injection();
+    private final static ThreadLocal<LinkedList<Injection>> INJECTIONS = new ThreadLocal<LinkedList<Injection>>(); /*{
+        public LinkedList<Injection> initialValue() {
+            return new LinkedList<Injection>();
         }
-    };
+    };*/
 
     /**
      * Create an injector with the given parent the given builders and the given
@@ -381,7 +382,15 @@ public class Injector {
         // them before we make new ones.
         collectOwnerObjects();
 
-        INJECTION.get().injectionDepth++;
+        // Much smaller than deriving from ThreadLocal to define initialzer.
+        LinkedList<Injection> injections = INJECTIONS.get();
+        if (injections == null) {
+            injections = new LinkedList<Injection>();
+            INJECTIONS.set(injections);
+        }
+
+        injections.addLast(new Injection());
+        injections.getLast().injectionDepth++;
     }
 
     /**
@@ -393,7 +402,8 @@ public class Injector {
      *            Whether the injection was successful.
      */
     void endInjection(boolean success) {
-        Injection injection = INJECTION.get();
+        LinkedList<Injection> injections = INJECTIONS.get();
+        Injection injection = injections.getLast();
         if (--injection.injectionDepth == 0 && !injection.setting) {
             injection.setting = true;
             try {
@@ -435,7 +445,10 @@ public class Injector {
                     injector.scopeLock.unlock();
                     injector = injector.parent;
                 }
-                INJECTION.remove();
+                injections.removeLast();
+                if (injections.isEmpty()) {
+                    INJECTIONS.remove();
+                }
             }
         }
     }
@@ -587,7 +600,7 @@ public class Injector {
      *         cached.
      */
     Ilk.Box getBoxOrLockScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        Injection injection = INJECTION.get();
+        Injection injection = INJECTIONS.get().getLast();
         List<Object> qualifedType = Arrays.<Object> asList(key, qualifier);
         if (!injection.scopes.containsKey(scope)) {
             injection.scopes.put(scope, new HashMap<List<Object>, Ilk.Box>());
@@ -633,7 +646,7 @@ public class Injector {
      *            The newly created object.
      */
     void addBoxToScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope, Ilk.Box box) {
-        Injection injection = INJECTION.get();
+        Injection injection = INJECTIONS.get().getLast();
         if (injection.scopes.get(scope).containsKey( Arrays.<Object> asList(key, qualifier))) {
             throw new IllegalStateException("Not expecting this state, implies an object that takes itself as a constructor argument.");
         }
@@ -649,7 +662,7 @@ public class Injector {
      *            The reflector to use for setter injection.
      */
     void queueForSetterInjection(Ilk.Box box, IlkReflect.Reflector reflector) {
-        Injection injection = INJECTION.get();
+        Injection injection = INJECTIONS.get().getLast();
         injection.unset.offer(box);
         injection.reflectors.offer(reflector);        
     }
@@ -724,7 +737,8 @@ public class Injector {
             Class<?>[] parameters = new Class<?>[arguments.length + 1];
             final Ilk.Box[] withIlkArguments = new Ilk.Box[arguments.length + 1];
 
-            withIlkArguments[0] = new Ilk<T>() {}.assign(new Ilk<T>() {}, unwrapped).box();
+            Ilk<T> tv = new Ilk<T>() {};
+            withIlkArguments[0] = tv.assign(tv, unwrapped).box();
             parameters[0] = Ilk.class;
 
             for (int i = 0; i < arguments.length; i++) {

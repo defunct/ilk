@@ -160,6 +160,11 @@ public class InjectorBuilder {
      * <code>Vendor</code> defines the type key and qualifier of the binding.
      * This method is used to add extension <code>Vendor</code> implementations
      * like multi-bindings.
+     * <p>
+     * Note that there is no type variable and that the vendor is provided with
+     * a wildcard for its type parameters since the vendor already encapsulates
+     * all of the type information in super type tokens, the type information is
+     * no longer needed at this point.
      * 
      * @param vendor
      *            The vendor.
@@ -202,7 +207,7 @@ public class InjectorBuilder {
     }
 
     /**
-     * Create an implementation binding that binds the given key to th given
+     * Create an implementation binding that binds the given key to the given
      * implementation.
      * 
      * @param implementation
