@@ -1,9 +1,9 @@
 package com.goodworkalan.ilk.inject;
 
 /**
- * A car seat.
+ * A license.
  *
  * @author Alan Gutierrez
  */
-public class Seat {
+public class License {
 }

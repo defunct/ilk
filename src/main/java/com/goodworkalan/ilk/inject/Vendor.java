@@ -9,11 +9,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.inject.Scope;
 
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.IlkReflect;
+import com.goodworkalan.ilk.Types;
 
 /**
  * Supplies an instance of an object or a <code>Provider&lt;T&gt;</code>.
@@ -115,6 +117,10 @@ public abstract class Vendor<I> {
      */
     Ilk.Box instance(Injector injector) {
         boolean success = false;
+        boolean implementation = getClass().equals(ImplementationVendor.class);
+        if (implementation && Provider.class.isAssignableFrom(Types.getRawClass(ilk.key.type))) {
+            injector.setSetterInjectionBoundary();
+        }
         injector.startInjection();
         try {
             Ilk.Box box = null;

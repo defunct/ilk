@@ -49,6 +49,7 @@ class ProviderVendor<I> extends Vendor<I> {
      */
     public Ilk.Box get(Injector injector)
     throws InstantiationException, IllegalAccessException, InvocationTargetException {
-        return ilk.box(injector.newInstance(reflector, provider.key).cast(provider).get());
+        Provider<? extends I> instance = injector.instance(provider, qualifier);
+        return ilk.box(instance.get());
     }
 }

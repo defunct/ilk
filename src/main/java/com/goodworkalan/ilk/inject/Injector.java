@@ -383,13 +383,28 @@ public class Injector {
 
         // Much smaller than deriving from ThreadLocal to define initialzer.
         LinkedList<Injection> injections = INJECTIONS.get();
+
+        if (injections == null) {
+            injections = new LinkedList<Injection>();
+            injections.addLast(new Injection());
+            INJECTIONS.set(injections);
+        }
+
+        injections.getLast().injectionDepth++;
+    }
+
+    /**
+     * Indicate that the next injection is an independent object graph and that
+     * the injector should invoke setter injection on all subsequently created
+     * instances before returning.
+     */
+    void setSetterInjectionBoundary() {
+        LinkedList<Injection> injections = INJECTIONS.get();
         if (injections == null) {
             injections = new LinkedList<Injection>();
             INJECTIONS.set(injections);
         }
-
         injections.addLast(new Injection());
-        injections.getLast().injectionDepth++;
     }
 
     /**
@@ -439,13 +454,13 @@ public class Injector {
                     }
                 }
             } finally {
-                Injector injector = this;
-                for (int i = 0; i < injection.lockHeight; i++) {
-                    injector.scopeLock.unlock();
-                    injector = injector.parent;
-                }
                 injections.removeLast();
                 if (injections.isEmpty()) {
+                    Injector injector = this;
+                    for (int i = 0, stop = injection.lockHeight; i < stop; i++) {
+                        injector.scopeLock.unlock();
+                        injector = injector.parent;
+                    }
                     INJECTIONS.remove();
                 }
             }
@@ -526,8 +541,22 @@ public class Injector {
         }
         return vendor;
     }
-    
-    // TODO Document.
+
+    /**
+     * Create an implementation vendor from type keys.
+     * 
+     * @param <K>
+     *            The local type variable.
+     * @param iface
+     *            The interface.
+     * @param implmentation
+     *            The implementation.
+     * @param qualifier
+     *            The qualifier.
+     * @param scope
+     *            The scope.
+     * @return An implementation vendor.
+     */
     static <K> Vendor<?> implementation(Ilk.Key iface, Ilk.Key implmentation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(new Ilk<K>() {}, iface.type);
         Ilk.Key vendorKey = vendorIlk.key;
@@ -600,7 +629,8 @@ public class Injector {
      *         cached.
      */
     Ilk.Box getBoxOrLockScope(Ilk.Key key, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        Injection injection = INJECTIONS.get().getLast();
+        LinkedList<Injection> injections = INJECTIONS.get();
+        Injection injection = injections.getLast();
         List<Object> qualifedType = Arrays.<Object> asList(key, qualifier);
         if (!injection.scopes.containsKey(scope)) {
             injection.scopes.put(scope, new HashMap<List<Object>, Ilk.Box>());
@@ -620,9 +650,9 @@ public class Injector {
             if (box == null) {
                 Injector unlocked = this;
                 for (int i = 0; i < lockHeight; i++) {
-                    if (injection.lockHeight <= i) {
+                    if (injections.getFirst().lockHeight <= i) {
                         unlocked.scopeLock.lock();
-                        injection.lockHeight++;
+                        injections.getFirst().lockHeight++;
                     }
                     unlocked = unlocked.parent;
                 }
@@ -728,9 +758,6 @@ public class Injector {
      * @param arguments
      *            The additional constructor arguments, boxed.
      * @return A new boxed instance of the object.
-     * @throws InvocationTargetException 
-     * @throws IllegalAccessException 
-     * @throws InstantiationException 
      */
     static <T> Ilk.Box needsIlkConstructor(IlkReflect.Reflector reflector, Ilk.Key key, Type unwrapped, Ilk.Box... arguments) {
         try {
@@ -748,6 +775,7 @@ public class Injector {
 
             Constructor<?> constructor = getRawClass(key.type).getConstructor(parameters);
 
+            // Would save 1K to move to the parent package.
             return IlkReflect.newInstance(new IlkReflect.Reflector() {
                 public Object newInstance(Constructor<?> constructor, Object[] arguments)
                 throws InstantiationException, IllegalAccessException, InvocationTargetException {

@@ -21,8 +21,14 @@ import com.goodworkalan.ilk.IlkReflect;
 class Injection {
     /** The injection depth. */
     public int injectionDepth;
-    
-    /** The number of parent levels locked for scope update. */
+
+    /**
+     * The number of parent levels locked for scope update. The lock height of
+     * the first injection is always used, and lock heights for subsequent
+     * injections are ignored, so that no unlocking takes place at the end of a
+     * nested injection, and any injectors locked by a nested injection remain
+     * locked until the original injection completes.
+     */
     public int lockHeight;
 
     /** The queue of constructed objects that need to undergo setter injection. */

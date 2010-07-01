@@ -7,6 +7,11 @@ import java.lang.annotation.Retention;
 
 import javax.inject.Qualifier;
 
+/**
+ * Indicate that a driver is licensed.
+ *
+ * @author Alan Gutierrez
+ */
 @Qualifier
 @Documented
 @Retention(RUNTIME)

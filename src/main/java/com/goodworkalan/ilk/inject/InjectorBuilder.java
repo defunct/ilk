@@ -263,6 +263,13 @@ public class InjectorBuilder {
      * the given interface. If the scope is null, a new instance of the
      * implementation class is constructed for each use of the interface.
      * 
+     * The constructor ImplementationVendor<Provider<? extends
+     * I>>(Ilk<capture#24-of ? extends Provider<? extends I>>, Ilk.Key,
+     * Class<capture#28-of ? extends Annotation>, Class<capture#29-of ? extends
+     * Annotation>, IlkReflect.Reflector) is undefined line 279
+     * InjectorBuilder.java
+     * /ilk-inject/src/main/java/com/goodworkalan/ilk/inject Java Problem
+     * 
      * @param <I>
      *            The type to bind.
      * @param provider
@@ -275,7 +282,9 @@ public class InjectorBuilder {
      *            The scope or null to build a new instance every time.
      * @return The provider vendor.
      */
-    public <I> Vendor<I> provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+    public <I, P extends Provider<? extends I>> Vendor<I> provider(Ilk<P> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        Vendor<P> providerVendor = new ImplementationVendor<P>(provider, provider.key, qualifier, scope, reflectors.get(Types.getRawClass(provider.key.type).getPackage()));
+        vendor(providerVendor);
         Vendor<I> vendor = new ProviderVendor<I>(provider, ilk, qualifier, scope, reflectors.get(provider.getClass().getPackage()));
         vendor(vendor);
         return vendor;

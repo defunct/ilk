@@ -9,7 +9,13 @@ import org.testng.annotations.Test;
 
 import com.goodworkalan.ilk.Ilk;
 
+/**
+ * Tests for the {@link Injector} class.
+ *
+ * @author Alan Gutierrez
+ */
 public class InjectorTest {
+    /** Test a lot of things. */
     @Test
     public void everything() {
         InjectorBuilder newInjector = new InjectorBuilder();
