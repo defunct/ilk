@@ -34,7 +34,7 @@ public class InjectException extends RuntimeException {
      * @param cause
      *            The cause.
      */
-    public InjectException(String message, Throwable cause) {
+    public InjectException(Throwable cause, String message) {
         super(message, cause);
     }
 
@@ -66,17 +66,39 @@ public class InjectException extends RuntimeException {
      *            The format arguments.
      * @return The message.
      */
-    static String _(String format, Throwable cause, Object... arguments) {
-        if ((cause instanceof Exception) || (cause instanceof ExceptionInInitializerError) || (cause instanceof IllegalArgumentException)) {
-            for (int i = 0; i < arguments.length; i++) {
-                if (arguments[i] instanceof Class<?>) {
-                    arguments[i] = ((Class<?>) arguments[i]).getName();
-                }
+    static String _(String format, Object... arguments) {
+        for (int i = 0; i < arguments.length; i++) {
+            if (arguments[i] instanceof Class<?>) {
+                arguments[i] = ((Class<?>) arguments[i]).getName();
             }
-            return String.format(format, arguments);
-        } else if (cause instanceof RuntimeException) {
-            throw (RuntimeException) cause;
         }
-        throw (Error) cause;
+        return String.format(format, arguments);
+    }
+    
+    /**
+     * Assert that the given exception is a reflection related
+     * <code>Exception</code>. .
+     * 
+     * @param e
+     *            The throwable.
+     * @return The throwable.
+     * @exception RuntimeException
+     *                if the throwable is an <code>RuntimeException</code> but
+     *                not an <code>IllegalArgumentException</code>.
+     * @exception Error
+     *                if the throwable is an <code>Error</code> but not an
+     *                <code>ExceptionInInitializerError</code>.
+     */
+    public static Throwable $(Throwable e) {
+        if (e instanceof Error) { 
+            if (!(e instanceof ExceptionInInitializerError)) {
+                throw (Error) e;
+            }
+        } else if (e instanceof RuntimeException) {
+            if (!(e instanceof IllegalArgumentException)) {
+                throw (RuntimeException) e;
+            }
+        }
+        return e;
     }
 }

@@ -41,20 +41,6 @@ class ImplementationVendor<I> extends Vendor<I> {
     }
 
     /**
-     * Create the default implementation vendor that binds the given super type
-     * token to the given implementation with no qualifier, scope or special
-     * reflector.
-     * 
-     * @param ilk
-     *            The super type token of the binding.
-     * @param implementation
-     *            The implementation.
-     */
-    public ImplementationVendor(Ilk<I> ilk, Ilk.Key implementation) {
-        this(ilk, implementation, null, null, null);
-    }
-
-    /**
      * Get a boxed instance of the implementation using the given injector.
      * 
      * @param injector

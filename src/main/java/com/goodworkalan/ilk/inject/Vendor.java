@@ -1,6 +1,7 @@
 package com.goodworkalan.ilk.inject;
 
 import static com.goodworkalan.ilk.Types.getRawClass;
+import static com.goodworkalan.ilk.inject.InjectException.$;
 import static com.goodworkalan.ilk.inject.InjectException._;
 
 import java.lang.annotation.Annotation;
@@ -41,7 +42,7 @@ public abstract class Vendor<I> {
      * The reflector to use to construct the instance and invoke the setters.
      */
     protected final IlkReflect.Reflector reflector;
-
+    
     /**
      * Create a vendor with the given super type token.
      * <p>
@@ -124,7 +125,7 @@ public abstract class Vendor<I> {
                 try {
                     box = get(injector);
                 } catch (Throwable e) {
-                  throw new InjectException(_("Unable to create new instance of [%s].", e, getRawClass(ilk.key.type)), e);
+                    throw new InjectException($(e), _("Unable to create new instance of [%s].", getRawClass(ilk.key.type)));
                 }
                 if (getClass().equals(ImplementationVendor.class)) {
                     injector.queueForSetterInjection(box, reflector);

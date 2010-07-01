@@ -2,6 +2,7 @@ package com.goodworkalan.ilk.inject;
 
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,7 @@ public class InjectorBuilder {
     InjectorBuilder(Injector parent) {
         this.parent = parent;
         scope(InjectorScoped.class);
+        scope(NoScope.class); // Needed for instances.
         builders.put(NoQualifier.class, new HashMap<Ilk.Key, Vendor<?>>());
     }
 
@@ -159,20 +161,16 @@ public class InjectorBuilder {
      * This method is used to add extension <code>Vendor</code> implementations
      * like multi-bindings.
      * 
-     * @param <I>
-     *            The type to bind.
      * @param vendor
      *            The vendor.
-     * @return The vendor.
      */
-    public <I> Vendor<I> bind(Vendor<I> vendor) {
+    public void vendor(Vendor<?> vendor) {
         Map<Ilk.Key, Vendor<?>> builderByIlk = builders.get(vendor.qualifier);
         if (builderByIlk == null) {
             builderByIlk = new HashMap<Ilk.Key, Vendor<?>>();
             builders.put(vendor.qualifier, builderByIlk);
         }
         builderByIlk.put(vendor.ilk.key, vendor);
-        return vendor;
     }
 
     /**
@@ -198,9 +196,34 @@ public class InjectorBuilder {
      * @return The implementation vendor.
      */
     public <I> Vendor<I> implementation(Ilk<? extends I> implementation, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(Types.getRawClass(implementation.key.type).getPackage())));
+        Vendor<I> vendor = new ImplementationVendor<I>(ilk, implementation.key, qualifier, scope, reflectors.get(Types.getRawClass(implementation.key.type).getPackage()));
+        vendor(vendor);
+        return vendor;
     }
 
+    /**
+     * Create an implementation binding that binds the given key to th given
+     * implementation.
+     * 
+     * @param implementation
+     *            The implementation type key.
+     * @param face
+     *            The interface type key.
+     * @param qualifier
+     *            The qualifier.
+     * @param scope
+     *            The scope.
+     * @exception IllegalArgumentException
+     *                If the interface is not assignable from the
+     *                implementation.
+     */
+    public void implementation(Ilk.Key implementation, Ilk.Key face, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        if (!face.isAssignableFrom(implementation)) {
+            throw new IllegalArgumentException();
+        }
+        vendor(Injector.implementation(face, implementation, qualifier, scope));
+    }
+    
     /**
      * Bind the type specified by the given super type token annotated with the
      * given qualifier to the given provider in the given scope. Neither the
@@ -222,7 +245,9 @@ public class InjectorBuilder {
      * @return The provider vendor.
      */
     public <I> Vendor<I> provider(Provider<? extends I> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ProviderInstanceVendor<I>(ilk, provider, qualifier, scope));
+        Vendor<I> vendor = new ProviderInstanceVendor<I>(ilk, provider, qualifier, scope);
+        vendor(vendor);
+        return vendor;
     }
 
     /**
@@ -246,7 +271,9 @@ public class InjectorBuilder {
      * @return The provider vendor.
      */
     public <I> Vendor<I> provider(Ilk<? extends Provider<? extends I>> provider, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        return bind(new ProviderVendor<I>(provider, ilk, qualifier, scope, reflectors.get(provider.getClass().getPackage())));
+        Vendor<I> vendor = new ProviderVendor<I>(provider, ilk, qualifier, scope, reflectors.get(provider.getClass().getPackage()));
+        vendor(vendor);
+        return vendor;
     }
 
     /**
@@ -266,7 +293,34 @@ public class InjectorBuilder {
      * @return The instance vendor.
      */
     public <I> Vendor<I> instance(I instance, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
-        return bind(new InstanceVendor<I>(ilk, ilk.box(instance), qualifier));
+        if (qualifier == null) {
+            qualifier = NoQualifier.class;
+        }
+        scopes.get(NoScope.class).put(Arrays.<Object>asList(ilk.key, qualifier), ilk.box(instance));
+        Vendor<I> vendor = new InstanceVendor<I>(ilk, ilk.box(instance), qualifier);
+        vendor(vendor);
+        return vendor;
+    }
+
+    /**
+     * Used by interfaces that manipulate injector boxed participants via
+     * reflection without knowing the underlying type.
+     * 
+     * @param box
+     *            The box.
+     * @param key
+     *            The key or null to use the box key.
+     * @param qualifier
+     *            The qualifier or null.
+     */
+    public void instance(Ilk.Box box, Ilk.Key key, Class<? extends Annotation> qualifier) {
+        if (key == null) {
+            key = box.key;
+        }
+        if (qualifier == null) {
+            qualifier = NoQualifier.class;
+        }
+        scopes.get(NoScope.class).put(Arrays.<Object>asList(box.key, qualifier), box);
     }
 
     /**
@@ -286,7 +340,9 @@ public class InjectorBuilder {
      * @return The instance vendor.
      */
     public <I> Vendor<I> box(Ilk.Box instance, Ilk<I> ilk, Class<? extends Annotation> qualifier) {
-        return bind(new InstanceVendor<I>(ilk, instance, qualifier));
+        Vendor<I> vendor = new InstanceVendor<I>(ilk, instance, qualifier);
+        vendor(vendor);
+        return vendor;
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.goodworkalan.ilk.inject;
 
 import static com.goodworkalan.ilk.Types.getRawClass;
+import static com.goodworkalan.ilk.inject.InjectException.$;
 import static com.goodworkalan.ilk.inject.InjectException._;
 
 import java.lang.annotation.Annotation;
@@ -158,6 +159,15 @@ public class Injector {
         Ilk<Injector> injectorIlk = new Ilk<Injector>(Injector.class);
         this.vendors.get(NoQualifier.class).put(InjectorBuilder.ilk(Injector.class).key, new InstanceVendor<Injector>(injectorIlk, injectorIlk.box(this), null));
         this.parent = parent;
+    }
+
+    /**
+     * Get the parent injector.
+     * 
+     * @return The parent injector.
+     */
+    public Injector getParent() {
+        return parent;
     }
 
     /**
@@ -396,7 +406,7 @@ public class Injector {
                                 try {
                                     inject(reflector, box, method);
                                 } catch (Throwable e) {
-                                    throw new InjectException(_("Unable to inject method [%s] in class [%s].", e, method.getName(), box.key), e);
+                                    throw new InjectException($(e), _("Unable to inject method [%s] in class [%s].",  method.getName(), box.key));
                                 }
                             }
                         }
@@ -405,7 +415,7 @@ public class Injector {
                                 try {
                                     inject(reflector, box, field);
                                 } catch (Throwable e) {
-                                    throw new InjectException(_("Unable to inject field [%s] in class [%s].", e, field.getName(), box.key), e);
+                                    throw new InjectException($(e), _("Unable to inject field [%s] in class [%s].", field.getName(), box.key));
                                 }
                             }
                         }
@@ -498,14 +508,22 @@ public class Injector {
         Vendor<?> vendor = getStipulatedVendor(key, qualifier);
         if (vendor == null) {
             if (qualifier.equals(NoQualifier.class)) {
-                Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(new Ilk<K>() {}, key.type);
-                Ilk.Key vendorKey = vendorIlk.key;
-                Ilk.Box boxedKey = new Ilk<Ilk.Key>(Ilk.Key.class).box(key);
-                return needsIlkConstructor(IlkReflect.REFLECTOR, vendorKey, key.type, boxedKey).cast(vendorIlk);
+                return implementation(key, key, qualifier, NoScope.class);
             }
             return getVendor(key, NoQualifier.class);
         }
         return vendor;
+    }
+    
+    static <K> Vendor<?> implementation(Ilk.Key iface, Ilk.Key implmentation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(new Ilk<K>() {}, iface.type);
+        Ilk.Key vendorKey = vendorIlk.key;
+        Ilk.Box boxedImplementation = new Ilk<Ilk.Key>(Ilk.Key.class).box(implmentation);
+        Ilk<Class<? extends Annotation>> annotationIlk = new Ilk<Class<? extends Annotation>>() {};
+        Ilk.Box boxedQualifier = annotationIlk.box(qualifier);
+        Ilk.Box boxedScope = annotationIlk.box(scope);
+        Ilk.Box boxedReflector = new Ilk<IlkReflect.Reflector>(IlkReflect.Reflector.class).box(IlkReflect.REFLECTOR);
+        return needsIlkConstructor(IlkReflect.REFLECTOR, vendorKey, iface.type, boxedImplementation, boxedQualifier, boxedScope, boxedReflector).cast(vendorIlk);
     }
 
     /**
@@ -660,7 +678,7 @@ public class Injector {
         for (java.lang.reflect.Constructor<?> constructor : getRawClass(type.type).getConstructors()) {
             if (constructor.getAnnotation(Inject.class) != null) {
                 if (injectable != null) {
-                    throw new InjectException(_("Multiple injectable constructors found for [%s].", null, getRawClass(type.type)), null);
+                    throw new InjectException(null, _("Multiple injectable constructors found for [%s].", getRawClass(type.type)));
                 }
                 injectable = constructor;
             }
@@ -672,7 +690,7 @@ public class Injector {
             injectable = noArgument;
         }
         if (injectable == null) {
-            throw new InjectException(_("No injectable constructor found for [%s].", null, getRawClass(type.type)), null);
+            throw new InjectException(null, _("No injectable constructor found for [%s].", getRawClass(type.type)));
         }
         Ilk.Box[] arguments = arguments(injectable.getParameterTypes(), injectable.getParameterAnnotations(), injectable .getGenericParameterTypes());
         Ilk.Box instance = IlkReflect.newInstance(reflector, type, injectable, arguments);
