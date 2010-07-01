@@ -1,6 +1,7 @@
 package com.goodworkalan.ilk;
 
 import static com.goodworkalan.ilk.Types.getRawClass;
+import static java.lang.String.format;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -13,13 +14,16 @@ import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
 import java.util.HashMap;
 import java.util.LinkedList;
-
-import static java.lang.String.format;
 import java.util.Map;
 
 /**
  * Methods for reflective invocation against boxed object instances that
  * perpetuates type-safety.
+ * <p>
+ * This is an extension of the <code>com.goodworkalan.ilk</code> package in
+ * order to keep the construction of boxed instances package private and type
+ * safe. New boxes can be created using type parameters, or through reflection,
+ * where reflection is used when the type parameters are no longer visible.
  * 
  * @author Alan Gutierrez
  */
