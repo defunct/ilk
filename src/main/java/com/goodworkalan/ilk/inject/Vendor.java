@@ -160,9 +160,10 @@ public abstract class Vendor<I> {
      *             If the provider class is abstract.
      */
     Ilk.Box provider(Injector injector) {
-        Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(new Ilk<Ilk<I>>() {}, ilk).key;
+        Ilk<Ilk<I>> ilkIlk = new Ilk<Ilk<I>>() {};
+        Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(ilkIlk, ilk).key;
         Type type = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
-        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.assign(new Ilk<Ilk<I>>() {}, ilk).box(this);
+        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.assign(ilkIlk, ilk).box(this);
         Ilk.Box boxedInjector = new Ilk<Injector>(Injector.class).box(injector);
         return Injector.needsIlkConstructor(IlkReflect.REFLECTOR, provider, type, boxedVendor, boxedInjector);
     }
