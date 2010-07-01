@@ -15,6 +15,7 @@ import com.goodworkalan.ilk.inject.Vendor;
  * @author Alan Gutierrez
  * 
  * @param <T>
+ *            The type to vend.
  */
 public class AliasVendor<T> extends Vendor<T> {
     /** The type to alias. */
