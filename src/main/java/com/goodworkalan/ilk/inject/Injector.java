@@ -41,8 +41,7 @@ import com.goodworkalan.ilk.Types;
  */
 public class Injector {
     /** The type of the scope map. */
-    final static Ilk<ConcurrentMap<List<Object>, Ilk.Box>> SCOPE_TYPE = new Ilk<ConcurrentMap<List<Object>, Ilk.Box>>() {
-    };
+    final static Ilk<ConcurrentMap<List<Object>, Ilk.Box>> SCOPE_TYPE = new Ilk<ConcurrentMap<List<Object>, Ilk.Box>>() {};
 
     /**
      * A weak identity reference used to track owner instances created by
@@ -273,24 +272,24 @@ public class Injector {
         return instance(ilk.key, qualifier).cast(ilk);
     }
 
-    /**
-     * Get an instance of the the given instance provider bound to an
-     * implementation with the given qualifier, or to the implementation with no
-     * qualifier if the binding for the given qualifier does not exist. The
-     * qualifier can be null to select the unqualified binding.
-     * 
-     * @param <T>
-     *            Type interface type.
-     * @param ilk
-     *            The interface super type token.
-     * @param qualifier
-     *            The binding qualifier.
-     * @return An instance of the instance provider for the bound
-     *         implementation.
-     */
-    public <T> Provider<T> provider(Ilk<T> ilk, Class<? extends Annotation> qualifier) {
-        return provider(ilk.key, qualifier).cast(new Ilk<Provider<T>>() {}.assign(new Ilk<Ilk<T>>() {}, ilk));
-    }
+//    /**
+//     * Get an instance of the the given instance provider bound to an
+//     * implementation with the given qualifier, or to the implementation with no
+//     * qualifier if the binding for the given qualifier does not exist. The
+//     * qualifier can be null to select the unqualified binding.
+//     * 
+//     * @param <T>
+//     *            Type interface type.
+//     * @param ilk
+//     *            The interface super type token.
+//     * @param qualifier
+//     *            The binding qualifier.
+//     * @return An instance of the instance provider for the bound
+//     *         implementation.
+//     */
+//    public <T> Provider<T> provider(Ilk<T> ilk, Class<? extends Annotation> qualifier) {
+//        return provider(ilk.key, qualifier).cast(new Ilk<Provider<T>>() {}.assign(new Ilk<Ilk<T>>() {}, ilk));
+//    }
 
     /**
      * Invoke the given method on the given boxed instance using the given
@@ -528,6 +527,7 @@ public class Injector {
         return vendor;
     }
     
+    // TODO Document.
     static <K> Vendor<?> implementation(Ilk.Key iface, Ilk.Key implmentation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
         Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(new Ilk<K>() {}, iface.type);
         Ilk.Key vendorKey = vendorIlk.key;
