@@ -6,18 +6,39 @@ import org.testng.annotations.Test;
 
 import com.goodworkalan.ilk.Ilk;
 
+/**
+ * Tests of the public API.
+ *
+ * @author Alan Gutierrez
+ */
 public class PublicTest {
+    /** Test assign with method type variables. */
     @Test
     public void cast() {
-        foo(new Ilk<List<String>>() {});
+        makeTypes(new Ilk<List<String>>() {});
     }
     
-    public static <T> void foo(Ilk<T> ilk) {
+    /**
+     * Test assign with method type variables.
+     * 
+     * @param ilk
+     *            A super type token from which a new token will be derived.
+     */
+    public static <T> void makeTypes(Ilk<T> ilk) {
         System.out.println(ilk);
-        System.out.println(bar(ilk));
+        System.out.println(asList(ilk));
     }
-    
-    public static <T> Ilk<List<T>> bar(Ilk<T> ilk) {
+
+    /**
+     * Create a list super type token that contains the type of the given super
+     * type token.
+     * 
+     * @param ilk
+     *            A super type token from which a new token will be derived.
+     * @return A super type token for a list that contains the given super type
+     *         token type.
+     */
+    public static <T> Ilk<List<T>> asList(Ilk<T> ilk) {
         return new Ilk<List<T>>() { }.assign(new Ilk<Ilk<T>>(){}, ilk);
     }
 }
