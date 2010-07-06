@@ -535,37 +535,11 @@ public class Injector {
         Vendor<?> vendor = getStipulatedVendor(key, qualifier);
         if (vendor == null) {
             if (qualifier.equals(NoQualifier.class)) {
-                return implementation(key, key, qualifier, NoScope.class);
+                return ImplementationVendor.implementation(key, key, qualifier, NoScope.class);
             }
             return getVendor(key, NoQualifier.class);
         }
         return vendor;
-    }
-
-    /**
-     * Create an implementation vendor from type keys.
-     * 
-     * @param <K>
-     *            The local type variable.
-     * @param iface
-     *            The interface.
-     * @param implmentation
-     *            The implementation.
-     * @param qualifier
-     *            The qualifier.
-     * @param scope
-     *            The scope.
-     * @return An implementation vendor.
-     */
-    static <K> Vendor<?> implementation(Ilk.Key iface, Ilk.Key implmentation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(new Ilk<K>() {}, iface.type);
-        Ilk.Key vendorKey = vendorIlk.key;
-        Ilk.Box boxedImplementation = new Ilk<Ilk.Key>(Ilk.Key.class).box(implmentation);
-        Ilk<Class<? extends Annotation>> annotationIlk = new Ilk<Class<? extends Annotation>>() {};
-        Ilk.Box boxedQualifier = annotationIlk.box(qualifier);
-        Ilk.Box boxedScope = annotationIlk.box(scope);
-        Ilk.Box boxedReflector = new Ilk<IlkReflect.Reflector>(IlkReflect.Reflector.class).box(IlkReflect.REFLECTOR);
-        return needsIlkConstructor(IlkReflect.REFLECTOR, vendorKey, iface.type, boxedImplementation, boxedQualifier, boxedScope, boxedReflector).cast(vendorIlk);
     }
 
     /**
@@ -764,8 +738,7 @@ public class Injector {
             Class<?>[] parameters = new Class<?>[arguments.length + 1];
             final Ilk.Box[] withIlkArguments = new Ilk.Box[arguments.length + 1];
 
-            Ilk<T> tv = new Ilk<T>() {};
-            withIlkArguments[0] = tv.assign(tv, unwrapped).box();
+            withIlkArguments[0] = new Ilk.Box(unwrapped);
             parameters[0] = Ilk.class;
 
             for (int i = 0; i < arguments.length; i++) {

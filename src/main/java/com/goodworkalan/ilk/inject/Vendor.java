@@ -8,6 +8,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 import javax.inject.Provider;
 import javax.inject.Qualifier;
@@ -166,10 +167,10 @@ public abstract class Vendor<I> {
      *             If the provider class is abstract.
      */
     Ilk.Box provider(Injector injector) {
-        Ilk<Ilk<I>> ilkIlk = new Ilk<Ilk<I>>() {};
-        Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(ilkIlk, ilk).key;
+        TypeVariable<?> tv = Vendor.class.getTypeParameters()[0];
+        Ilk.Key provider = new Ilk<VendorProvider<I>>() { }.assign(tv, ilk.key.type).key;
         Type type = ((ParameterizedType) provider.type).getActualTypeArguments()[0];
-        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.assign(ilkIlk, ilk).box(this);
+        Ilk.Box boxedVendor = new Ilk<Vendor<I>>() {}.assign(tv, ilk.key.type).box(this);
         Ilk.Box boxedInjector = new Ilk<Injector>(Injector.class).box(injector);
         return Injector.needsIlkConstructor(IlkReflect.REFLECTOR, provider, type, boxedVendor, boxedInjector);
     }

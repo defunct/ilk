@@ -226,7 +226,7 @@ public class InjectorBuilder {
         if (!face.isAssignableFrom(implementation)) {
             throw new IllegalArgumentException();
         }
-        vendor(Injector.implementation(face, implementation, qualifier, scope));
+        vendor(ImplementationVendor.implementation(face, implementation, qualifier, scope));
     }
     
     /**

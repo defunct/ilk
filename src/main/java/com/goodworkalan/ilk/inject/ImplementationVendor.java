@@ -2,9 +2,11 @@ package com.goodworkalan.ilk.inject;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.TypeVariable;
 
 import com.goodworkalan.ilk.Ilk;
 import com.goodworkalan.ilk.IlkReflect;
+import com.goodworkalan.ilk.Types;
 
 /**
  * Vender for a specific implementation of an interface. This vendor will
@@ -55,5 +57,32 @@ class ImplementationVendor<I> extends Vendor<I> {
     @Override
     public Ilk.Box get(Injector injector) throws InstantiationException, IllegalAccessException, InvocationTargetException {
         return injector.newInstance(reflector, implementation);
+    }
+
+    /**
+     * Create an implementation vendor from type keys.
+     * 
+     * @param <K>
+     *            The local type variable.
+     * @param iface
+     *            The interface.
+     * @param implmentation
+     *            The implementation.
+     * @param qualifier
+     *            The qualifier.
+     * @param scope
+     *            The scope.
+     * @return An implementation vendor.
+     */
+    public static <K> Vendor<?> implementation(Ilk.Key iface, Ilk.Key implmentation, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
+        TypeVariable<?> tv = Types.getMethods(ImplementationVendor.class, "implementation")[0].getTypeParameters()[0];
+        Ilk<ImplementationVendor<K>> vendorIlk = new Ilk<ImplementationVendor<K>>() {}.assign(tv, iface.type);
+        Ilk.Key vendorKey = vendorIlk.key;
+        Ilk.Box boxedImplementation = new Ilk<Ilk.Key>(Ilk.Key.class).box(implmentation);
+        Ilk<Class<? extends Annotation>> annotationIlk = new Ilk<Class<? extends Annotation>>() {};
+        Ilk.Box boxedQualifier = annotationIlk.box(qualifier);
+        Ilk.Box boxedScope = annotationIlk.box(scope);
+        Ilk.Box boxedReflector = new Ilk<IlkReflect.Reflector>(IlkReflect.Reflector.class).box(IlkReflect.REFLECTOR);
+        return Injector.needsIlkConstructor(IlkReflect.REFLECTOR, vendorKey, iface.type, boxedImplementation, boxedQualifier, boxedScope, boxedReflector).cast(vendorIlk);
     }
 }
