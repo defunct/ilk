@@ -102,7 +102,7 @@ public class IlkTest {
     /** Test box. */
     @Test
     public void ilkBox() {
-        Ilk.Box box = new Ilk<List<String>>() {}.box();
+        Ilk.Box box = new Ilk.Box(new Ilk<List<String>>() {}.key.type);
         Ilk<List<String>> unboxed = box.cast(new Ilk<Ilk<List<String>>>() {});
         System.out.println(unboxed);
     }
@@ -114,41 +114,9 @@ public class IlkTest {
      *            The type variable.
      */
     @Test <T> void ilkFromKey() {
-        Ilk.Box box = new Ilk<List<T>>() {}.assign(new Ilk<T>() {}, String.class).box();
+        Ilk.Box box = new Ilk.Box(new Ilk<List<T>>() {}.assign((TypeVariable<?>) new Ilk<T>() {}.key.type, String.class).key.type);
         Ilk<List<String>> ilkString = box.cast(new Ilk<Ilk<List<String>>>() {});
         System.out.println(ilkString);
-    }
-    
-    /** Test assigning super type tokens to type variables. */
-    @Test
-    public  void assign() {
-        Ilk.Box box = assignMap(new Ilk<Integer>(Integer.class), new Ilk<String>(String.class), new ArrayList<Map<Integer, String>>());
-        List<Map<Integer, String>> listMap = box.cast(new Ilk<List<Map<Integer, String>>>() {});
-        System.out.println(listMap);
-    }
-
-    /**
-     * Assign super type tokens to type variables.
-     * 
-     * @param <K>
-     *            The key type.
-     * @param <V>
-     *            The value type.
-     * @param k
-     *            The key super type token.
-     * @param v
-     *            The value super type token.
-     * @param unboxed
-     *            The instance to assign the type variables to.
-     * @return A boxed instance of the given unboxed type with the type
-     *         variables assigned.
-     */
-    public <K, V> Ilk.Box assignMap(Ilk<K> k, Ilk<V> v, List<Map<K, V>> unboxed) {
-        Ilk<List<Map<K, V>>> listMap = new Ilk<List<Map<K,V>>>(){};
-        System.out.println(listMap);
-        Ilk<List<Map<K, V>>> assignK = listMap.assign(new Ilk<Ilk<K>>() {}, k);
-        Ilk<List<Map<K, V>>> assignV = assignK.assign(new Ilk<Ilk<V>>() {}, v);
-        return assignV.box(unboxed);
     }
     
     /** Test super key. */
@@ -248,4 +216,12 @@ public class IlkTest {
         Type type = Types.getActualType(Four.class.getField("strings").getGenericType(), ilk.key.type, new LinkedList<Map<TypeVariable<?>, Type>>());
         assertEquals(type.toString(), "java.util.List<java.lang.String>");
     }
+    
+//    public <T> Ilk<List<List<T>>> testTypeVariableAssignment(Type type) {
+//        for (Method method : getClass().getMethods()) {
+//            if (method.getName().equals("testTypeVariableAssignment")) {
+//                return new Ilk<List<List<T>>>() {}.assign(method.getTypeParameters(), type);
+//            }
+//        }
+//    }
 }

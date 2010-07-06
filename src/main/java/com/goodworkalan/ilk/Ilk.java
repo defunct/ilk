@@ -23,62 +23,13 @@ public class Ilk<T> {
 
     /**
      * Create a super type token for the given class representing a type that is
-     * not generic..
+     * not generic.
      * 
-     * @param keyClass
+     * @param type
      *            The class.
      */
-    public Ilk(Class<? extends T> keyClass) {
-        this.key = new Key(keyClass);
-    }
-
-    /**
-     * Create a new <code>Ilk</code> with a type variable assigned using the
-     * given <code>Ilk</code>.
-     * <p>
-     * This method will assign a type contained in an <code>Ilk</code> type
-     * using the given <code>ilk</code> that is itself described by the
-     * <code>Ilk</code> given by <cdoe>ilkIlk</code>. The value of
-     * 
-     * <pre>
-     * &lt;code&gt;
-     * public &lt;T&gt; Ilk&lt;List&lt;T&gt;&gt; asList(Ilk&lt;T&gt; ilk) {
-     *     return new Ilk&lt;List&lt;T&gt;&gt;(){}.assign(new Ilk&lt;Ilk&lt;T&gt;&gt;() {}, ilk);
-     * }
-     * 
-     * public void example() {
-     *     List&lt;Set&lt;String&gt;&gt; list = asList(new Ilk&lt;Set&lt;String&gt;&gt;() {});
-     * }
-     * &lt;/code&gt;
-     * </pre>
-     * 
-     * This method will create new <code>Ilk</code> and is useful for creating
-     * new type compositions in a type-safe manor.
-     * 
-     * @param <V>
-     *            The type to assign.
-     * @param ilkIlk
-     *            An <code>Ilk</code> that describes the <code>Ilk</code> whose
-     *            contained type will be used for the assignment.
-     * @param ilk
-     *            An <code>Ilk</code>
-     * @return An <code>Ilk</code> with the type contained by the given
-     *         <code>Ilk</code> assigned to every instance of the type variable
-     *         used to represent the type parameter of the contained type.
-     * @exception IllegalArgumentException
-     *                If the contained type in the descriptive <code>Ilk</code>
-     *                <code>ilkIlk</code> representing the type variable
-     *                <code>V</code> it not itself a type variable.
-     */
-    public <V> Ilk<T> assign(Ilk<Ilk<V>> ilkIlk, Ilk<V> ilk) {
-        Type typeVariable = ((ParameterizedType)ilkIlk.key.type).getActualTypeArguments()[0];
-        if (!(typeVariable instanceof TypeVariable<?>)) {
-            throw new IllegalArgumentException();
-        }
-        Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
-        types.put((TypeVariable<?>) typeVariable, ilk.key.type);
-        Type assigned = Types.getActualType(key.type, types);
-        return new Ilk<T>(assigned);
+    public Ilk(Class<? extends T> type) {
+        this.key = new Key(type);
     }
 
     /**
@@ -94,9 +45,9 @@ public class Ilk<T> {
      * @return A new super type token with the type variable replaced with the
      *         type.
      */
-    public <V> Ilk<T> assign(Ilk<V> typeVariable, Type type) {
+    public <V> Ilk<T> assign(TypeVariable<?> typeVariable, Type type) {
         Map<TypeVariable<?>, Type> types = new HashMap<TypeVariable<?>, Type>();
-        types.put((TypeVariable<?>) typeVariable.key.type, type);
+        types.put(typeVariable, type);
         Type assigned = Types.getActualType(key.type, types);
         return new Ilk<T>(assigned);
     }
@@ -177,16 +128,6 @@ public class Ilk<T> {
      */
     public Box box(T object) {
         return new Box(key, object);
-    }
-
-    /**
-     * It is also rather annoying to get an <code>Ilk.Box</code> with an
-     * <code>Ilk</code> in it, so here is a method to do that.
-     * 
-     * @return This Ilk boxed.
-     */
-    public Box box() {
-        return new Box(new Key(new Types.Parameterized(Ilk.class, null, new Type[] { key.type })), this);
     }
 
     /**
@@ -338,13 +279,27 @@ public class Ilk<T> {
          * <p>
          * Otherwise, it is very difficult to create this class this type
          * contains itself.
+         * 
+         * @param classIlk
+         *            The class.
          */
         public <T> Box(Ilk<Class<T>> classIlk) {
             this.key = classIlk.key;
             this.object = classIlk.key.type;
         }
-        
-        
+
+        /**
+         * Crate a boxed ilk of the given type.
+         * 
+         * @param <T>
+         *            Type variable to satisfy compiler.
+         * @param type
+         *            The type.
+         */
+        public <T> Box(Type type) {
+            this.key = new Key(new Types.Parameterized(Ilk.class, null, new Type[] { type }));
+            this.object = new Ilk<T>(type);
+        }
         
         /**
          * Cast the given object to the given class.

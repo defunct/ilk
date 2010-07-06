@@ -5,6 +5,7 @@ import java.util.List;
 import org.testng.annotations.Test;
 
 import com.goodworkalan.ilk.Ilk;
+import com.goodworkalan.ilk.Types;
 
 /**
  * Tests of the public API.
@@ -39,6 +40,6 @@ public class PublicTest {
      *         token type.
      */
     public static <T> Ilk<List<T>> asList(Ilk<T> ilk) {
-        return new Ilk<List<T>>() { }.assign(new Ilk<Ilk<T>>(){}, ilk);
+        return new Ilk<List<T>>() { }.assign(Types.getMethods(PublicTest.class, "asList")[0].getTypeParameters()[0], ilk.key.type);
     }
 }

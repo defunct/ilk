@@ -2,10 +2,12 @@ package com.goodworkalan.ilk;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -35,6 +37,25 @@ public class Types {
             return (Class<?>) type;
         }
         return null;
+    }
+
+    /**
+     * Get an array of the methods in the type that have the given name.
+     * 
+     * @param type
+     *            Type class.
+     * @param name
+     *            The method name.
+     * @return An array of methods in the type that have the given name.
+     */
+    public static Method[] getMethods(Class<?> type, String name) {
+        ArrayList<Method> methods = new ArrayList<Method>();
+        for (Method method : type.getMethods()) {
+            if (method.getName().equals(name)) {
+                methods.add(method);
+            }
+        }
+        return methods.toArray(new Method[methods.size()]);
     }
 
     /**
