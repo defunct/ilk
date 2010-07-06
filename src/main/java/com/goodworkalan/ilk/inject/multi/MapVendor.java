@@ -40,7 +40,7 @@ public class MapVendor<K, V> extends Vendor<Map<K, V>>  {
      *            The scope in which to store the constructed map.
      */
     public MapVendor(Map<K, Vendor<? extends V>> vendors, Ilk<K> keyIlk, Ilk<V> valueIlk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(new Ilk<Map<K, V>>(){}.assign(new Ilk<Ilk<K>>() {}, keyIlk).assign(new Ilk<Ilk<V>>(){}, valueIlk), qualifier, scope, IlkReflect.REFLECTOR);
+        super(new Ilk<Map<K, V>>(){}.assign(MapVendor.class.getTypeParameters()[0], keyIlk.key.type).assign(MapVendor.class.getTypeParameters()[1], valueIlk.key.type), qualifier, scope, IlkReflect.REFLECTOR);
         this.vendors = vendors;
     }
 
