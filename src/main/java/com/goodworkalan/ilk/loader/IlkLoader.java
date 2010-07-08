@@ -79,7 +79,7 @@ public class IlkLoader {
         if (arguments.size() != 1) {
             throw new IllegalArgumentException();
         }
-        return new Ilk<T>() {}.assign(new Ilk<T>() {}, arguments.get(0)).box();
+        return new Ilk.Box(arguments.get(0));
     }
 
     /**

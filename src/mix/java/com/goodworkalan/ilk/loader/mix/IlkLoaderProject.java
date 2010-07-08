@@ -19,7 +19,7 @@ public class IlkLoaderProject implements ProjectModule {
     public void build(Builder builder) {
         builder
             .cookbook(JavaProject.class)
-                .produces("com.github.bigeasy.ilk/ilk-loader/0.1")
+                .produces("com.github.bigeasy.ilk/ilk-loader/0.1.0.1")
                 .depends()
                     .production("com.github.bigeasy.ilk/ilk/0.+1.0.2")
                     .development("org.testng/testng-jdk15/5.10")
