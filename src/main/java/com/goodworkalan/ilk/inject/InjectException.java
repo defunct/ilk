@@ -78,6 +78,8 @@ public class InjectException extends RuntimeException {
     /**
      * Assert that the given exception is a reflection related
      * <code>Exception</code>. .
+     * <p>
+     * FIXME Outgoing.
      * 
      * @param e
      *            The throwable.
