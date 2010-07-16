@@ -334,7 +334,7 @@ public class InjectorBuilder {
         if (qualifier == null) {
             qualifier = NoQualifier.class;
         }
-        scopes.get(NoScope.class).put(Arrays.<Object>asList(box.key, qualifier), box);
+        vendor(InstanceVendor.instance(box, key, qualifier));
     }
 
     /**
