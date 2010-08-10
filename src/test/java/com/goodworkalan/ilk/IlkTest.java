@@ -1,8 +1,8 @@
 package com.goodworkalan.ilk;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
@@ -31,14 +31,23 @@ public class IlkTest {
     @Test
     public void classConstructor() {
         Ilk<Number> number = new Ilk<Number>(Number.class);
-        Ilk<Integer> integer = new Ilk<Integer>(Integer.class);
-        assertTrue(number.key.isAssignableFrom(integer.key));
+        assertEquals(Number.class, number.key.type);
     }
 
-    /** Test failed construction. */
+    /** Test failed super type token constructor. */
     @Test(expectedExceptions = ClassCastException.class)
-    public void tooGeneric() {
+    public void noSuperType() {
         new Ilk<List<String>>();
+    }
+    
+    /** Keys can correctly determine if a class is assignable to another class. */
+    @Test
+    public void classAssignable() {
+        Ilk<Number> number = new Ilk<Number>(Number.class);
+        Ilk<Integer> integer = new Ilk<Integer>(Integer.class);
+        assertTrue(number.key.isAssignableFrom(integer.key));
+        Ilk<String> string = new Ilk<String>(String.class);
+        assertFalse(number.key.isAssignableFrom(string.key));
     }
     
     /** Test to string. */
@@ -46,6 +55,21 @@ public class IlkTest {
     public void string() {
         assertEquals(new Ilk<List<String>>() {}.key.toString(), "java.util.List<java.lang.String>");
         assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
+    }
+    
+    /** Test quality of the same key. */
+    @Test
+    public void same() {
+        Ilk.Key key = new Ilk.Key(String.class);
+        assertEquals(key, key);
+    }
+    
+    /** Two keys of the same class are equal. */
+    @Test
+    public void classEquality() {
+        Ilk.Key key = new Ilk.Key(String.class);
+        assertEquals(key, new Ilk.Key(String.class));
+        assertFalse(key.equals(new Ilk.Key(Number.class)));
     }
     
     /** Test quality. */
