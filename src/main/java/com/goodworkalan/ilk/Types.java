@@ -626,25 +626,25 @@ public class Types {
      * @return A hash code generated from the types.
      */
     public static int hashCode(Type...types) {
-        int hashCode = 1;
+        int hashCode = 0;
         for (Type type : types) {
-            hashCode *= 37;
-            if (type == null) {
-                hashCode = hashCode * 37 + 1;
-            } else if (type instanceof WildcardType) {
-                WildcardType wt = (WildcardType) type;
-                hashCode ^= hashCode(wt.getLowerBounds()) ^ hashCode(wt.getUpperBounds());
-            } else if (type instanceof ParameterizedType) {
-                ParameterizedType pt = (ParameterizedType) type;
-                hashCode ^= pt.getRawType().hashCode() ^ hashCode(pt.getOwnerType()) ^ hashCode(pt.getActualTypeArguments());
-            } else if (type instanceof TypeVariable<?>) {
-                TypeVariable<?> tv = (TypeVariable<?>) type;
-                hashCode ^= hashCode(tv.getBounds()) ^ tv.getName().hashCode();
-                hashCode ^= (tv.getGenericDeclaration() instanceof Member) ? tv.getGenericDeclaration().hashCode() : hashCode((Type) tv.getGenericDeclaration());
-            } else if (type instanceof GenericArrayType) {
-                hashCode ^= hashCode(((GenericArrayType) type).getGenericComponentType());
-            } else {
-                hashCode ^= ((Class<?>) type).hashCode();
+            if (type != null) {
+                hashCode *= 37;
+                if (type instanceof WildcardType) {
+                    WildcardType wt = (WildcardType) type;
+                    hashCode ^= hashCode(wt.getLowerBounds()) ^ hashCode(wt.getUpperBounds());
+                } else if (type instanceof ParameterizedType) {
+                    ParameterizedType pt = (ParameterizedType) type;
+                    hashCode ^= pt.getRawType().hashCode() ^ hashCode(pt.getOwnerType()) ^ hashCode(pt.getActualTypeArguments());
+                } else if (type instanceof TypeVariable<?>) {
+                    TypeVariable<?> tv = (TypeVariable<?>) type;
+                    hashCode ^= hashCode(tv.getBounds()) ^ tv.getName().hashCode();
+                    hashCode ^= (tv.getGenericDeclaration() instanceof Member) ? tv.getGenericDeclaration().hashCode() : hashCode((Type) tv.getGenericDeclaration());
+                } else if (type instanceof GenericArrayType) {
+                    hashCode ^= hashCode(((GenericArrayType) type).getGenericComponentType());
+                } else {
+                    hashCode ^= ((Class<?>) type).hashCode();
+                }
             }
         }
         return hashCode;

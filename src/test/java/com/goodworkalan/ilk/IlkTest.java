@@ -52,15 +52,15 @@ public class IlkTest {
     
     /** Two keys of the same class are equal. */
     @Test
-    public void classEquality() {
+    public void classKeyEquality() {
         Ilk.Key key = new Ilk.Key(String.class);
         assertEquals(key, new Ilk.Key(String.class));
         assertFalse(key.equals(new Ilk.Key(Number.class)));
     }
     
-    /** Test quality of the same key. */
+    /** An instance of a key is equal to itself. */
     @Test
-    public void same() {
+    public void classSame() {
         Ilk.Key key = new Ilk.Key(String.class);
         assertEquals(key, key);
     }
@@ -73,6 +73,22 @@ public class IlkTest {
         ParameterizedType pt = (ParameterizedType) listString.key.type;
         assertEquals(List.class, pt.getRawType());
         assertEquals(String.class, pt.getActualTypeArguments()[0]);
+    }
+    
+    /** A super type token is equal to a super type token of the same type. */
+    @Test
+    public void superTypeTokenKeyEquality() {
+        Ilk<List<String>> listString = new Ilk<List<String>>() {};
+        assertEquals(listString.key, new Ilk<List<String>>() {}.key);
+        assertFalse(listString.key.equals(new Ilk<Set<String>>() {}.key));
+        assertFalse(listString.key.equals(new Ilk<List<Number>>() {}.key));
+    }
+    
+    /** A super type token is equal to itself. */
+    @Test
+    public void superTypeTokenSame() {
+        Ilk<List<String>> listString = new Ilk<List<String>>() {};
+        assertEquals(listString, listString);
     }
 
     /** Test quality. */
