@@ -50,11 +50,12 @@ public class IlkTest {
         assertFalse(number.key.isAssignableFrom(string.key));
     }
     
-    /** Test to string. */
+    /** Two keys of the same class are equal. */
     @Test
-    public void string() {
-        assertEquals(new Ilk<List<String>>() {}.key.toString(), "java.util.List<java.lang.String>");
-        assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
+    public void classEquality() {
+        Ilk.Key key = new Ilk.Key(String.class);
+        assertEquals(key, new Ilk.Key(String.class));
+        assertFalse(key.equals(new Ilk.Key(Number.class)));
     }
     
     /** Test quality of the same key. */
@@ -64,14 +65,16 @@ public class IlkTest {
         assertEquals(key, key);
     }
     
-    /** Two keys of the same class are equal. */
+    /** Construct a super type token. */
     @Test
-    public void classEquality() {
-        Ilk.Key key = new Ilk.Key(String.class);
-        assertEquals(key, new Ilk.Key(String.class));
-        assertFalse(key.equals(new Ilk.Key(Number.class)));
+    public void constructSuperTypeToken() {
+        Ilk<List<String>> listString = new Ilk<List<String>>() {};
+        assertTrue(ParameterizedType.class.isAssignableFrom(listString.key.type.getClass()));
+        ParameterizedType pt = (ParameterizedType) listString.key.type;
+        assertEquals(List.class, pt.getRawType());
+        assertEquals(String.class, pt.getActualTypeArguments()[0]);
     }
-    
+
     /** Test quality. */
     @Test
     public void equality() {
@@ -112,6 +115,13 @@ public class IlkTest {
         assertEquals((int) map.get(key), 1);
     }
     
+    /** Test to string. */
+    @Test
+    public void string() {
+        assertEquals(new Ilk<List<String>>() {}.key.toString(), "java.util.List<java.lang.String>");
+        assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
+    }
+
     public Ilk.Key getSuperKey(Ilk.Key key, Class<?> keyClass) {
       return new Ilk.Key(Types.getActualType(keyClass, key.type, new LinkedList<Map<TypeVariable<?>, Type>>()));
   }
