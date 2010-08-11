@@ -620,6 +620,16 @@ public class Types {
 
     /**
      * Generate a hash code from the given list of <code>Type</code> instances.
+     * <p>
+     * The case of <code>A<B extends C<? super B>></code> will recurse, in
+     * equality too. A real problem for equality. Equality of type variables hsa
+     * more to do with the position of the type varaible and its definition,
+     * since it cannot change, and since we're not building nonsense ones, are
+     * we? We're replacing them with actual types, not new type variables, since
+     * this is an actualization library. So, type variables, we cannot
+     * manufacture them, and they are defined in source, so we create a hash
+     * from their declaration and their position in the parameter list, or just
+     * their name, we can equate them using their declaring type and name.
      * 
      * @param types
      *            The types.
