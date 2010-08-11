@@ -64,6 +64,13 @@ class InstanceVendor<I> extends Vendor<I> {
         return Injector.needsIlkConstructor(IlkReflect.REFLECTOR,  vendorIlk.key, iface.type, boxedBox, boxedQualifier).cast(vendorIlk);
     }
 
+    /**
+     * Create a super type token for the <code>Annotation</code> class. Each
+     * super type token adds 1K to the size of the library so we use the
+     * sparingly and we reuse them where we can.
+     * 
+     * @return The super type token for <code>Annotation</code>.
+     */
     private static Ilk<Class<? extends Annotation>> annotationIlk() {
         return new Ilk<Class<? extends Annotation>>() {};
     }
