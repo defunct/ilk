@@ -92,7 +92,7 @@ public class IlkTest {
     }
 
     /** Test quality. */
-    @Test
+    @Test(enabled = false)
     public void equality() {
         Ilk.Key key = new Ilk.Key(String.class);
         assertEquals(key, key);

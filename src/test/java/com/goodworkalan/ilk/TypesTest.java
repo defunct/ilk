@@ -1,6 +1,8 @@
 package com.goodworkalan.ilk;
 
 import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -37,8 +39,17 @@ public class TypesTest {
     /** An actualized map type. */
     public final Map<Integer, String> mapIntString = null;
     
+    /** An actualized list type. */
+    public final List<Integer> listInt = null;
+    
+    /** An actualized list type. */
+    public final List<String> listString = null;
+    
     /** An actualized generic array type. */
     public final List<String>[] arrayListString = null;
+    
+    /** An actualized generic array type. */
+    public final List<Number>[] arrayListNumber = null;
     
     /** A method with a generic return type. */
     public <T> T genericReturnType() {
@@ -126,5 +137,73 @@ public class TypesTest {
         WildcardType wt = (WildcardType) pt.getActualTypeArguments()[0];
         int hashCode = wt.getLowerBounds().hashCode() ^ wt.getUpperBounds().hashCode();
         assertEquals(hashCode, Types.hashCode(wt));
+    }
+
+    /**
+     * Null is equal to null for our purposes.
+     */
+    @Test
+    public void nullEquality() {
+        assertTrue(Types.equals(null, null));
+        assertFalse(Types.equals(null, String.class));
+        assertFalse(Types.equals(String.class, null));
+    }
+
+    /**
+     * Class equality is tested using <code>Object.equals</code> of the class
+     * itself.
+     */
+    @Test
+    public void classEquality() {
+        assertTrue(Types.equals(String.class, String.class));
+        assertFalse(Types.equals(Number.class, String.class));
+    }
+    
+    public final List<Three<String>.Four<Integer>> threeStringFourInteger = null;
+    public final List<Three<Integer>.Four<Integer>> threeIntegerFourInteger = null;
+    
+    /**
+     * Two parameterized types are equal if the raw type, actual type and all
+     * actual type parameters are equal.
+     */
+    @Test
+    public void parameterizedTypeEquality() throws Exception {
+        Field field = getClass().getField("mapIntString");
+        ParameterizedType pt = (ParameterizedType) field.getGenericType();
+        assertTrue(Types.equals(pt, pt));
+    }
+    
+    /** Two parameterized types are not equal if their raw types are not equal. */
+    @Test
+    public void parameterizedTypeRawTypeNotEqual() throws Exception {
+        Field map = getClass().getField("mapIntString");
+        Field list = getClass().getField("listInt");
+        assertFalse(Types.equals(map.getGenericType(), list.getGenericType()));
+    }
+    
+    /** Two parameterized types are not equal if their owner types are not equal. */
+    @Test
+    public void parameterizedTypeOwnerTypeNotEquals() throws Exception {
+        Field threeString = getClass().getField("threeStringFourInteger");
+        Field threeInteger = getClass().getField("threeIntegerFourInteger");
+        assertFalse(Types.equals(threeString.getGenericType(), threeInteger.getGenericType()));
+    }
+    
+    /** Two parameterized types are not equal if their actual parameter types are not equal. */
+    @Test
+    public void parameterizedTypeActualParmaeterTypeNotEquals() throws Exception {
+        Field threeString = getClass().getField("listInt");
+        Field threeInteger = getClass().getField("listString");
+        assertFalse(Types.equals(threeString.getGenericType(), threeInteger.getGenericType()));
+    }
+
+    /**
+     * Two generic array types are equal if their element types are equal.
+     */
+    @Test
+    public void genericArrayTypeEquality() throws Exception {
+        Field field = getClass().getField("arrayListString");
+        GenericArrayType gat = (GenericArrayType) field.getGenericType();
+        assertTrue(Types.equals(gat, gat));
     }
 }
