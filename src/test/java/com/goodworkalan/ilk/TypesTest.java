@@ -224,4 +224,23 @@ public class TypesTest {
         GenericArrayType gat = (GenericArrayType) field.getGenericType();
         assertTrue(Types.equals(gat, gat));
     }
+    
+    /**
+     * When converted to a string, a class shows only the fully qualified class
+     * name.
+     */
+    @Test
+    public void classToString() {
+        assertEquals("java.lang.String", Types.typeToString(String.class));
+    }
+    
+    /**
+     * When converted to a string, a parameterized type displays its fully
+     * qualified type names.
+     */
+    @Test
+    public void parameterizedTypeToString() throws Exception {
+        Field field = getClass().getField("mapIntString");
+        assertEquals("java.util.Map<java.lang.Integer, java.lang.String>", Types.typeToString(field.getGenericType()));
+    }
 }
