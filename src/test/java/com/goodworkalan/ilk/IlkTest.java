@@ -106,6 +106,28 @@ public class IlkTest {
         assertEquals(listString, listString);
     }
 
+    /**
+     * A key that wraps a class displays only the qualified class name, with no
+     * "interface" or "class" prefix.
+     */
+    @Test
+    public void keyClassToString() {
+        assertEquals("java.lang.String", new Ilk<String>(String.class).key.toString());
+    }
+    
+    /**
+     * A key that wraps any other type will delegate to the
+     * <code>toString</code> method of the wrapped type.
+     */
+    @Test
+    public void parameterizedTypeToString() {
+        assertEquals("java.util.List<java.lang.String>", new Ilk<List<String>>() {}.key.toString());
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////////
+    // OLD TESTS
+//  //////////////////////////////////////////////////////////////////////////////////
+
     /** Test assigning actual generic type parameters. */
     @Test(enabled = false)
     public void actualTypes() throws Exception {
