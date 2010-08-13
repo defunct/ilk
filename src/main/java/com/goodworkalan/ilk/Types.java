@@ -1,7 +1,6 @@
 package com.goodworkalan.ilk;
 
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -312,7 +311,7 @@ public class Types {
             Type[] typesFrom = actualFrom.getActualTypeArguments();
             for (int i = 0; i < typesTo.length; i++) {
                 int code = typeAsCode(typesTo[i]);
-                if (code == 4 && code != typeAsCode(typesFrom[i])) {
+                if (code == 3 && code != typeAsCode(typesFrom[i])) {
                     if (!checkWildcardType((WildcardType) typesTo[i], typesFrom[i], false)) {
                         return false;
                     }
@@ -529,12 +528,12 @@ public class Types {
         if (type instanceof ParameterizedType) {
             return 2;
         } 
-        if (type instanceof TypeVariable<?>) {
-            return 3;
-        } 
         if (type instanceof WildcardType) {
-            return 4;
+            return 3;
         }
+        if (type instanceof TypeVariable<?>) {
+            return 4;
+        } 
         return 5;
     }
 
@@ -584,7 +583,7 @@ public class Types {
      *            Another object to test for equality.
      * @return True if the objects are equal.
      */
-    public static boolean equals(Object left, Object right) {
+    public static boolean equals(Type left, Type right) {
         // Needed to test raw types of parameterized types.
         if (left == null || right == null) {
             return left == null && right == null;
@@ -601,12 +600,6 @@ public class Types {
                     && equals(ptLeft.getOwnerType(), ptRight.getOwnerType())
                     && equals(ptLeft.getActualTypeArguments(), ptRight.getActualTypeArguments());
             case 3:
-                TypeVariable<?> tvLeft = (TypeVariable<?>) left;
-                TypeVariable<?> tvRight = (TypeVariable<?>) right;
-                return tvLeft.getName().equals(tvRight.getName())
-                    && equals(tvLeft.getGenericDeclaration(), tvRight.getGenericDeclaration())
-                    && equals(tvLeft.getBounds(), tvRight.getBounds());
-            case 4:
                 WildcardType wtLeft = (WildcardType) left;
                 WildcardType wtRight = (WildcardType) right;
                 return equals(wtLeft.getLowerBounds(), wtRight.getLowerBounds())
@@ -621,15 +614,15 @@ public class Types {
     /**
      * Generate a hash code from the given list of <code>Type</code> instances.
      * <p>
-     * The case of <code>A<B extends C<? super B>></code> will recurse, in
-     * equality too. A real problem for equality. Equality of type variables hsa
-     * more to do with the position of the type varaible and its definition,
-     * since it cannot change, and since we're not building nonsense ones, are
-     * we? We're replacing them with actual types, not new type variables, since
-     * this is an actualization library. So, type variables, we cannot
-     * manufacture them, and they are defined in source, so we create a hash
-     * from their declaration and their position in the parameter list, or just
-     * their name, we can equate them using their declaring type and name.
+     * The case of <code>A&lt;B extends C&lt;? super B&gt;&gt;</code> will
+     * recurse, in equality too. A real problem for equality. Equality of type
+     * variables hsa more to do with the position of the type varaible and its
+     * definition, since it cannot change, and since we're not building nonsense
+     * ones, are we? We're replacing them with actual types, not new type
+     * variables, since this is an actualization library. So, type variables, we
+     * cannot manufacture them, and they are defined in source, so we create a
+     * hash from their declaration and their position in the parameter list, or
+     * just their name, we can equate them using their declaring type and name.
      * 
      * @param types
      *            The types.
@@ -640,20 +633,20 @@ public class Types {
         for (Type type : types) {
             if (type != null) {
                 hashCode *= 37;
-                if (type instanceof WildcardType) {
-                    WildcardType wt = (WildcardType) type;
-                    hashCode ^= hashCode(wt.getLowerBounds()) ^ hashCode(wt.getUpperBounds());
-                } else if (type instanceof ParameterizedType) {
+                switch (typeAsCode(type)) {
+                case 1:
+                    hashCode ^= hashCode(((GenericArrayType) type).getGenericComponentType());
+                    break;
+                case 2:
                     ParameterizedType pt = (ParameterizedType) type;
                     hashCode ^= pt.getRawType().hashCode() ^ hashCode(pt.getOwnerType()) ^ hashCode(pt.getActualTypeArguments());
-                } else if (type instanceof TypeVariable<?>) {
-                    TypeVariable<?> tv = (TypeVariable<?>) type;
-                    hashCode ^= hashCode(tv.getBounds()) ^ tv.getName().hashCode();
-                    hashCode ^= (tv.getGenericDeclaration() instanceof Member) ? tv.getGenericDeclaration().hashCode() : hashCode((Type) tv.getGenericDeclaration());
-                } else if (type instanceof GenericArrayType) {
-                    hashCode ^= hashCode(((GenericArrayType) type).getGenericComponentType());
-                } else {
-                    hashCode ^= ((Class<?>) type).hashCode();
+                    break;
+                case 3:
+                    WildcardType wt = (WildcardType) type;
+                    hashCode ^= hashCode(wt.getLowerBounds()) ^ hashCode(wt.getUpperBounds());
+                    break;
+                default:
+                    hashCode ^=  type.hashCode();
                 }
             }
         }

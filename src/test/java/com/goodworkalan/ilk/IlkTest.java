@@ -10,7 +10,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,10 +51,26 @@ public class IlkTest {
     
     /** Two keys of the same class are equal. */
     @Test
-    public void classKeyEquality() {
+    public void classKeyEqual() {
         Ilk.Key key = new Ilk.Key(String.class);
         assertEquals(key, new Ilk.Key(String.class));
+    }
+    
+    /**
+     * A key that wraps a class is not equal to a key that wraps a different
+     * class.
+     */
+    @Test
+    public void classKeyNotEqual() {
+        Ilk.Key key = new Ilk.Key(String.class);
         assertFalse(key.equals(new Ilk.Key(Number.class)));
+    }
+    
+    /** A key is not equal to a class of another type. */
+    @Test
+    public void notEqualToString() {
+        Ilk.Key key = new Ilk.Key(String.class);
+        assertFalse(key.equals(String.class));
     }
     
     /** An instance of a key is equal to itself. */
@@ -91,27 +106,8 @@ public class IlkTest {
         assertEquals(listString, listString);
     }
 
-    /** Test quality. */
-    @Test(enabled = false)
-    public void equality() {
-        Ilk.Key key = new Ilk.Key(String.class);
-        assertEquals(key, key);
-        assertEquals(key, new Ilk.Key(String.class));
-        assertFalse(key.equals(new Ilk.Key(Integer.class)));
-        Ilk.Key listString = new Ilk<List<String>>() {}.key;
-        assertFalse(key.equals(listString));
-        assertFalse(listString.equals(key));
-        assertEquals(listString, listString);
-        assertFalse(listString.equals(new Ilk<List<Integer>>(){}.key));
-        ParameterizedType pt = (ParameterizedType) listString.type;
-        assertEquals(listString, new Ilk.Key(new Types.Parameterized(pt.getRawType(), pt.getOwnerType(), pt.getActualTypeArguments())));
-        assertFalse(listString.equals(new Ilk<Collection<String>>() { }.key));
-        assertFalse(new Ilk<Three<String>.Four<Integer>>() { }.key.equals(new Ilk<Three<Integer>.Four<Integer>>() { }.key));
-        assertFalse(listString.equals(null));
-    }
-    
     /** Test assigning actual generic type parameters. */
-    @Test
+    @Test(enabled = false)
     public void actualTypes() throws Exception {
         Ilk.Key key = new Ilk<TreeMap<String, List<Integer>>>() { }.key;
         Type actualMapType = Types.getActualType(Map.class, key.type, new LinkedList<Map<TypeVariable<?>, Type>>());
@@ -123,7 +119,7 @@ public class IlkTest {
     }
 
     /** Test hash code. */
-    @Test
+    @Test(enabled = false)
     public void hash() {
         Ilk.Key key = new Ilk<Map<String, List<Integer>>>() { }.key;
         Map<Ilk.Key, Integer> map = new HashMap<Ilk.Key, Integer>();
@@ -132,7 +128,7 @@ public class IlkTest {
     }
     
     /** Test to string. */
-    @Test
+    @Test(enabled = false)
     public void string() {
         assertEquals(new Ilk<List<String>>() {}.key.toString(), "java.util.List<java.lang.String>");
         assertEquals(new Ilk<String>() {}.key.toString(), "java.lang.String");
@@ -143,14 +139,14 @@ public class IlkTest {
   }
 
     /** Test creating a box that contains a class. */
-    @Test
+    @Test(enabled = false)
     public void boxAClass() {
         Ilk.Box box = new Ilk.Box(new Ilk<Class<Object>>() {});
         assertTrue(box.key.type instanceof ParameterizedType);
     }
     
     /** Test box. */
-    @Test
+    @Test(enabled = false)
     public void ilkBox() {
         Ilk.Box box = new Ilk.Box(new Ilk<List<String>>() {}.key.type);
         Ilk<List<String>> unboxed = box.cast(new Ilk<Ilk<List<String>>>() {});
@@ -163,14 +159,15 @@ public class IlkTest {
      * @param <T>
      *            The type variable.
      */
-    @Test <T> void ilkFromKey() {
+    @Test(enabled = false)
+    <T> void ilkFromKey() {
         Ilk.Box box = new Ilk.Box(new Ilk<List<T>>() {}.assign((TypeVariable<?>) new Ilk<T>() {}.key.type, String.class).key.type);
         Ilk<List<String>> ilkString = box.cast(new Ilk<Ilk<List<String>>>() {});
         System.out.println(ilkString);
     }
     
     /** Test super key. */
-    @Test
+    @Test(enabled = false)
     public void getSuperKey() {
         Ilk<FooMap<ArrayList<String>, Integer>> ilk = new Ilk<FooMap<ArrayList<String>, Integer>>(){};
         Ilk.Key mapKey = getSuperKey(ilk.key, SortedMap.class);
@@ -185,7 +182,7 @@ public class IlkTest {
     }
     
     /** Test is assignable from. */
-    @Test
+    @Test(enabled = false)
     public void assignment() {
         Ilk.Key string = new Ilk<String>() { }.key;
         Ilk.Key number = new Ilk<Number>() { }.key;
@@ -239,7 +236,7 @@ public class IlkTest {
     }
     
     /** Test box. */
-    @Test
+    @Test(enabled = false)
     public void box() {
         Ilk.Box box = new Ilk<String>() { }.box("Hello, World!");
         String hello = box.cast(String.class);
@@ -253,14 +250,14 @@ public class IlkTest {
     }
     
     /** Test a bad box cast. */
-    @Test(expectedExceptions = ClassCastException.class)
+    @Test(enabled = false, expectedExceptions = ClassCastException.class)
     public void boxBadCast() {
         Ilk.Box box = new Ilk<String>() { }.box("Hello, World!");
         box.cast(Integer.class);
     }
     
     /** Test get actual type against the generic type of a field. */
-    @Test
+    @Test(enabled = false)
     public void genericType() throws SecurityException, NoSuchFieldException {
         Ilk<Four> ilk = new Ilk<Four>(){};
         Type type = Types.getActualType(Four.class.getField("strings").getGenericType(), ilk.key.type, new LinkedList<Map<TypeVariable<?>, Type>>());

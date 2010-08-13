@@ -109,33 +109,30 @@ public class TypesTest {
     @Test
     public void classTypeVariableHashCode() {
         TypeVariable<?> type = List.class.getTypeParameters()[0];
-        int hashCode = Object.class.hashCode() ^ type.getName().hashCode() ^ List.class.hashCode();
-        assertEquals(hashCode, Types.hashCode(type));
+        assertEquals(type.hashCode(), Types.hashCode(type));
     }
     
     /**
-     * The hash code for a type variable is like the hash code for parameterized
-     * type, the various participants are combined using bitwise or, so we simply
-     * use the unrolled loop as a fixture.
+     * Since we never create new type variables, we use the hash code and equality
+     * defined by the JDK.
      */
     @Test
     public void methodTypeVariableHashCode() throws Exception {
         Method method = getClass().getMethod("genericReturnType");
         TypeVariable<?> type = (TypeVariable<?>) method.getGenericReturnType();
-        int hashCode = Object.class.hashCode() ^ type.getName().hashCode() ^ method.hashCode();
-        assertEquals(hashCode, Types.hashCode(type));
+        assertEquals(type.hashCode(), Types.hashCode(type));
     }
     
     /**
      * The hash code of a wildcard is the hash code of the upper and lower
      * bounds combined with bitwise or.
      */
-    @Test(enabled = false)
+    @Test
     public void wildcardHashCode() {
         TypeVariable<?> tv = SuperWild.class.getTypeParameters()[0];
         ParameterizedType pt = (ParameterizedType) tv.getBounds()[0];
         WildcardType wt = (WildcardType) pt.getActualTypeArguments()[0];
-        int hashCode = wt.getLowerBounds().hashCode() ^ wt.getUpperBounds().hashCode();
+        int hashCode = Types.hashCode(wt.getLowerBounds()) ^ Types.hashCode(wt.getUpperBounds());
         assertEquals(hashCode, Types.hashCode(wt));
     }
 
