@@ -2,6 +2,7 @@ package com.goodworkalan.ilk;
 
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertFalse;
+import static org.testng.AssertJUnit.assertNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 import java.lang.reflect.Field;
@@ -60,6 +61,26 @@ public class TypesTest {
     @Test
     public void constructor() {
         new Types();
+    }
+    
+    /** The raw class for class is the class itself. */
+    @Test
+    public void classGetRawClass() {
+        assertEquals(String.class, Types.getRawClass(String.class));
+    }
+    
+    /** The raw class for a parameterized type is its raw class member. */
+    @Test
+    public void parameterizedTypeGetRawClass() throws Exception {
+        Field field = getClass().getField("mapIntString");
+        assertEquals(Map.class, Types.getRawClass(field.getGenericType()));
+    }
+    
+    /** The raw class for any other type is null. */
+    @Test
+    public void otherTypeGetRawClass() throws Exception {
+        Field field = getClass().getField("arrayListString");
+        assertNull(Types.getRawClass(field.getGenericType()));
     }
     
     /** The hash code of null is zero. */
