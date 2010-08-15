@@ -149,9 +149,6 @@ public class Ilk<T> {
         /** The serial version id. */
         private static final long serialVersionUID = 1L;
 
-        /** The cached hash code for this key. */
-        private final int hashCode;
-        
         /** The type. */
         public final Type type;
 
@@ -163,7 +160,6 @@ public class Ilk<T> {
          */
         public Key(Type type) {
             this.type = type;
-            this.hashCode = Types.hashCode(type);
         }
 
         /**
@@ -174,6 +170,9 @@ public class Ilk<T> {
          * @return A key wrapping the type parameter.
          * @exception ClassCastException
          *                If the type is not a parameterized type.
+         * @exception IndexOutOfBoundsException
+         *                If the index of the actual type argument is out of
+         *                bounds.
          */
         public Key get(int index) {
             return new Key(((ParameterizedType) type).getActualTypeArguments()[index]);
@@ -226,7 +225,7 @@ public class Ilk<T> {
          */
         @Override
         public int hashCode() {
-            return hashCode;
+            return Types.hashCode(type);
         }
 
         /**
@@ -236,10 +235,7 @@ public class Ilk<T> {
          */
         @Override
         public String toString() {
-            if (type instanceof Class<?>) {
-                return ((Class<?>) type).getName();
-            }
-            return type.toString();
+            return Types.typeToString(type);
         }
     }
 
