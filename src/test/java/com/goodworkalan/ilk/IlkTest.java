@@ -132,6 +132,34 @@ public class IlkTest {
     public void keyHashCode() {
         assertEquals(String.class.hashCode(), new Ilk<String>(String.class).key.hashCode());
     }
+    
+    /**
+     * When get is called and the wrapped class is not a parameterized type, a
+     * <code>ClassCastException</code> is thrown
+     */
+    @Test(expectedExceptions = ClassCastException.class)
+    public void getNotParameterizedType() {
+        new Ilk<String>(String.class).key.get(0);
+    }
+
+    /**
+     * When get is called and the wrapped parameterized type and the index is
+     * out of bounds for the actual type arguments, an
+     * <code>IndexOutOfBoundsException</code> is thrown.
+     */
+    @Test(expectedExceptions = IndexOutOfBoundsException.class)
+    public void getOutOfBounds() {
+        new Ilk<List<String>>() {}.key.get(1);
+    }
+
+    /**
+     * Get returns the type at the index of the actual types for a parameterized
+     * class wrapped in an <code>Ilk.Key</code>.
+     */
+    @Test
+    public void get() {
+        assertEquals(String.class, new Ilk<List<String>>() {}.key.get(0).type);
+    }
 
     //////////////////////////////////////////////////////////////////////////////////
     // OLD TESTS
