@@ -34,7 +34,7 @@ public class ListVendor<I> extends Vendor<List<I>> {
      *            The super type token of type of the list to vend.
      */
     public ListVendor(List<Vendor<I>> vendors, Ilk<I> ilk, Class<? extends Annotation> qualifier, Class<? extends Annotation> scope) {
-        super(new Ilk<List<I>>() {}.assign(new Ilk<Ilk<I>>() {}, ilk), qualifier, scope, IlkReflect.REFLECTOR);
+        super(new Ilk<List<I>>() {}.assign(ListVendor.class.getTypeParameters()[0], ilk.key.type), qualifier, scope, IlkReflect.REFLECTOR);
         this.vendors = vendors;
     }
 
